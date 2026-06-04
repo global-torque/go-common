@@ -2,6 +2,7 @@ package echogooglecloud
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -39,13 +40,13 @@ func NewEchoGCLogger(c context.Context, component string, logLevel string, outpu
 	}
 
 	// locally we don't need details for google cloud logging
-	_, skipGoogleHook := output.(zerolog.ConsoleWriter)
+	_, consoleOutput := output.(zerolog.ConsoleWriter)
 	l := zerolog.
 		New(output).
 		Level(level).
 		Hook(logger.SeverityHook{}).
 		Hook(logger.ContextHook{}).
-		Hook(EchoGoogleCloud{skip: !skipGoogleHook}).
+		Hook(EchoGoogleCloud{skip: consoleOutput}).
 		With().Timestamp()
 
 	// if level == zerolog.DebugLevel || level == zerolog.TraceLevel {
@@ -73,21 +74,39 @@ func DefaultStdoutLogger(c context.Context, logLevel string) logger.Logger {
 	return NewEchoGCLogger(c, "default", logLevel, os.Stdout)
 }
 
-// NewComponentLogger return default logger instance with custom component
-func NewComponentLogger(c context.Context, component string) logger.Logger {
-	cfg := logger.Config{}
-	err := configurator.NewConfiguration(&cfg, "logger")
+// NewComponentLoggerE returns default logger instance with custom component.
+func NewComponentLoggerE(c context.Context, component string) (logger.Logger, error) {
+	cfg, err := loadConfig()
+	log := NewEchoGCLogger(c, component, cfg.LogLevel, outputForConfig(cfg))
 	if err != nil {
-		panic("Cannot parse config")
+		log.Error().Err(err).Msg("cannot parse logger config, using defaults")
 	}
 
-	var output io.Writer
-	// Beautiful output
+	return log, err
+}
+
+// NewComponentLogger return default logger instance with custom component.
+func NewComponentLogger(c context.Context, component string) logger.Logger {
+	log, _ := NewComponentLoggerE(c, component)
+	return log
+}
+
+func loadConfig() (logger.Config, error) {
+	cfg := logger.Config{LogLevel: zerolog.InfoLevel.String()}
+	if err := configurator.NewConfiguration(&cfg, "logger"); err != nil {
+		return cfg, fmt.Errorf("load logger configuration: %w", err)
+	}
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = zerolog.InfoLevel.String()
+	}
+
+	return cfg, nil
+}
+
+func outputForConfig(cfg logger.Config) io.Writer {
 	if cfg.LogConsole {
-		output = zerolog.NewConsoleWriter()
-	} else {
-		output = os.Stdout
+		return zerolog.NewConsoleWriter()
 	}
 
-	return NewEchoGCLogger(c, component, cfg.LogLevel, output)
+	return os.Stdout
 }

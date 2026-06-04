@@ -11,7 +11,7 @@ func BadRequest(err error, msg string) *Error {
 	if err == nil {
 		err = errors.New("")
 	}
-	finalMsg := map[string][]string{"__error__": {msg}}
+	finalMsg := SingleErrorMessage(msg)
 	if msg == "" {
 		finalMsg = MsgBadRequest
 	}
@@ -27,7 +27,7 @@ func NotFound(err error, msg string) *Error {
 	if err == nil {
 		err = errors.New("")
 	}
-	finalMsg := map[string][]string{"__error__": {msg}}
+	finalMsg := SingleErrorMessage(msg)
 	if msg == "" {
 		finalMsg = MsgNotFound
 	}
@@ -43,7 +43,7 @@ func InternalError(err error, msg string) *Error {
 	if err == nil {
 		err = errors.New("")
 	}
-	finalMsg := map[string][]string{"__error__": {msg}}
+	finalMsg := SingleErrorMessage(msg)
 	if msg == "" {
 		finalMsg = MsgInternalErr
 	}

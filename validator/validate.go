@@ -1,11 +1,12 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	valid "github.com/go-playground/validator/v10"
-	"github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/webdevelop-pro/go-common/response"
 )
@@ -82,8 +83,8 @@ func (va Validator) Verify(i interface{}, httpStatus int) error {
 	if err != nil {
 		fieldErrors := &response.Error{
 			StatusCode: httpStatus,
-			Err:        errors.Wrapf(err, "validator error"),
-			Message:    make(map[string][]string),
+			Err:        pkgerrors.Wrapf(err, "validator error"),
+			Message:    response.NewErrorMessages(nil),
 		}
 
 		var ve valid.ValidationErrors
@@ -107,7 +108,7 @@ func (va Validator) Verify(i interface{}, httpStatus int) error {
 		}
 		strErr = strErr[0 : len(strErr)-1]
 		// We change default validator error message cause it does not provide details we need
-		fieldErrors.Err = errors.Errorf(strErr)
+		fieldErrors.Err = errors.New(strErr)
 
 		return fieldErrors
 	}

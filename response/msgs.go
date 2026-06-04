@@ -3,13 +3,13 @@ package response
 
 var (
 	// MsgBadRequest used to indicate error in incoming data
-	MsgBadRequest = map[string][]string{"__error__": {"Bad request."}}
+	MsgBadRequest = SingleErrorMessage("Bad request.")
 	// MsgNotFound typically used when element haven't been found
-	MsgNotFound = map[string][]string{"__error__": {"Not found."}}
+	MsgNotFound = SingleErrorMessage("Not found.")
 	// MsgUnauthorized signalizes lack of token or other authorization data
-	MsgUnauthorized = map[string][]string{"__error__": {"Authorization error."}}
+	MsgUnauthorized = SingleErrorMessage("Authorization error.")
 	// MsgForbidden used when user does not have any permissions to perform action
-	MsgForbidden = map[string][]string{"__error__": {"Forbidden error."}}
+	MsgForbidden = SingleErrorMessage("Forbidden error.")
 	// MsgInternalErr server side error
-	MsgInternalErr = map[string][]string{"__error__": {"Internal/server error."}}
+	MsgInternalErr = SingleErrorMessage("Internal/server error.")
 )

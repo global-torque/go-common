@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -54,12 +53,21 @@ func CreateDefaultRequest(ctx context.Context, req Request) (*http.Request, erro
 	return res, nil
 }
 
-func CreateRequestWithFiles(req Request, body map[string]any, files map[string]string) (*http.Request, error) {
+// CreateRequestWithFiles creates a multipart request with the provided context.
+func CreateRequestWithFiles(
+	ctx context.Context,
+	req Request,
+	body map[string]any,
+	files map[string]string,
+) (*http.Request, error) {
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
 
 	if req.Port != "" {
 		req.Host = net.JoinHostPort(req.Host, req.Port)
+	}
+	if req.Scheme == "" {
+		req.Scheme = "http"
 	}
 
 	if req.Body != nil {
@@ -69,7 +77,10 @@ func CreateRequestWithFiles(req Request, body map[string]any, files map[string]s
 	values := map[string]io.Reader{}
 	for k, v := range body {
 		if vs, ok := v.(string); ok {
-			values[k] = strings.NewReader(vs)
+			if err := w.WriteField(k, vs); err != nil {
+				_ = w.Close()
+				return nil, errors.Wrapf(err, "cannot write form field %s", k)
+			}
 		}
 	}
 
@@ -91,30 +102,34 @@ func CreateRequestWithFiles(req Request, body map[string]any, files map[string]s
 		// upload a file
 		if _, ok := r.(*os.File); ok {
 			if fw, err = w.CreateFormFile(key, files[key]); err != nil {
-				w.Close()
-				x.Close()
+				_ = w.Close()
+				_ = x.Close()
 				return nil, errors.Wrapf(err, "cannot CreateFormFile %s", key)
 			}
 		} else {
 			// Add other fields
 			if fw, err = w.CreateFormField(key); err != nil {
-				w.Close()
-				x.Close()
+				_ = w.Close()
+				_ = x.Close()
 				return nil, errors.Wrapf(err, "cannot CreateFormField %s", key)
 			}
 		}
 		if _, err = io.Copy(fw, r); err != nil {
+			_ = x.Close()
 			return nil, errors.Wrapf(err, "cannot io.Copy %s", key)
 		}
 
-		x.Close()
+		_ = x.Close()
 	}
 	// Don't forget to close the multipart writer.
 	// If you don't close it, your request will be missing the terminating boundary.
-	w.Close()
+	if err := w.Close(); err != nil {
+		return nil, errors.Wrapf(err, "cannot close multipart writer")
+	}
 
 	// Now that you have a form, you can submit it to your handler.
-	res, err := http.NewRequest(
+	res, err := http.NewRequestWithContext(
+		ctx,
 		req.Method,
 		fmt.Sprintf("%s://%s%s", req.Scheme, req.Host, req.Path),
 		buf,
@@ -122,8 +137,6 @@ func CreateRequestWithFiles(req Request, body map[string]any, files map[string]s
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot create new request")
 	}
-
-	res = res.WithContext(context.Background())
 
 	// Don't forget to set the content type, this will contain the boundary.
 	res.Header.Set("Content-Type", w.FormDataContentType())

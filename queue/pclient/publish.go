@@ -2,11 +2,11 @@ package pclient
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/pkg/errors"
 	"github.com/webdevelop-pro/go-common/validator"
 )
@@ -42,46 +42,40 @@ func (b *Client) Publish(
 func (b *Client) PublishToTopic(
 	ctx context.Context, topicID string, data any, attr map[string]string,
 ) (*Message, error) {
-	var (
-		wg    sync.WaitGroup
-		msgID string
-		err   error
-	)
+	if b.client == nil {
+		return nil, ErrNotConnected
+	}
 
-	t := b.client.Topic(topicID)
-	ok, err := t.Exists(ctx)
+	ok, err := b.TopicExist(ctx, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrTopicConnect, err)
+	}
 	if !ok {
-		b.log.Error().Err(err).Stack().Interface("topic", topicID).Msgf(ErrTopicNotExists.Error())
+		b.log.Error().Err(err).Stack().Interface("topic", topicID).Msg(ErrTopicNotExists.Error())
 		return nil, errors.Wrapf(ErrTopicNotExists, ": %s", topicID)
 	}
 
 	msg, err := NewMessage(data, attr)
 	if err != nil {
-		b.log.Error().Err(err).Stack().Interface("data", data).Interface("attr", attr).Msgf(ErrUnmarshalPubSub.Error())
+		b.log.Error().Err(err).Stack().Interface("data", data).Interface("attr", attr).Msg(ErrUnmarshalPubSub.Error())
 		return nil, err
 	}
 
-	wg.Add(1)
+	t := b.client.Publisher(topicID)
+	defer t.Stop()
+
 	result := t.Publish(ctx, &pubsub.Message{
 		Data:       msg.Data,
 		Attributes: msg.Attributes,
 	})
 
-	go func(res *pubsub.PublishResult) {
-		defer wg.Done()
-		// The Get method blocks until a server-generated ID or
-		// an error is returned for the published message.
-		msgID, err = res.Get(ctx)
-		if err != nil {
-			// Error handling code can be added here.
-			b.log.Err(err).Msg(ErrPublish.Error())
-			return
-		}
+	msgID, err := result.Get(ctx)
+	if err != nil {
+		b.log.Err(err).Msg(ErrPublish.Error())
+		return nil, fmt.Errorf("%w: %w", ErrPublish, err)
+	}
 
-		b.log.Debug().Msgf("Published message; msg ID: %v to %s", msgID, topicID)
-	}(result)
-
-	wg.Wait()
+	b.log.Debug().Msgf("Published message; msg ID: %v to %s", msgID, topicID)
 	msg.ID = msgID
 	msg.PublishTime = time.Now()
 

@@ -73,7 +73,7 @@ func SendHTTPRequest(req httputils.Request, expected ExpectedResponse) SomeActio
 
 func SendHTTPRequestFiles(req httputils.Request, body map[string]any, files map[string]string, expected ExpectedResponse) SomeAction {
 	return func(t TestContext) error {
-		newReq, err := httputils.CreateRequestWithFiles(req, body, files)
+		newReq, err := httputils.CreateRequestWithFiles(t.Ctx, req, body, files)
 		assert.NoError(t.T, err)
 
 		doRequest := httputils.SendRequest

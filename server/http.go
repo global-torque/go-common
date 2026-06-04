@@ -2,9 +2,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -26,9 +30,10 @@ import (
 const pkgName = "http_server"
 
 type HTTPServer struct {
-	Echo   *echo.Echo
-	log    logger.Logger
-	config *Config
+	Echo       *echo.Echo
+	log        logger.Logger
+	config     *Config
+	httpServer *http.Server
 }
 
 func InitAndRun() fx.Option {
@@ -59,17 +64,21 @@ func (s *HTTPServer) AddRoute(route *route.Route) {
 }
 
 // NewServer returns new API instance.
-func NewServer() *HTTPServer {
+func NewServer() (*HTTPServer, error) {
 	var (
 		cfg = &Config{}
 		l   = logger.NewComponentLogger(context.TODO(), pkgName)
 	)
 
 	if err := configurator.NewConfiguration(cfg); err != nil {
-		l.Fatal().Err(err).Msg("failed to get configuration of server")
+		return nil, fmt.Errorf("load http server configuration: %w", err)
+	}
+	if strings.TrimSpace(cfg.CORSAllowedOrigins) == "" {
+		return nil, fmt.Errorf("CORS allowlist is required: set CORS_ALLOWED_ORIGINS")
 	}
 
 	e := echo.New()
+	allowedOrigins := originAllowlist(cfg.CORSAllowedOrigins)
 	// sets CORS headers if Origin is present.
 	// Private Network Access (PNA) preflight is handled at the nginx layer:
 	// nginx adds `Access-Control-Allow-Private-Network: true` for any vhost
@@ -89,17 +98,26 @@ func NewServer() *HTTPServer {
 				}
 				return false
 			},
-			AllowOriginFunc: func(_ string) (bool, error) {
-				return true, nil
-			},
+			AllowOriginFunc:  allowedOrigins,
 			AllowCredentials: true,
-			AllowMethods:     []string{"GET, POST, PUT, OPTIONS, DELETE, PATCH"},
-			AllowHeaders:     []string{"Authorization, X-PINGOTHER, Content-Type, X-Requested-With, X-Request-ID, Vary"},
+			AllowMethods: []string{
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodOptions,
+				http.MethodDelete,
+				http.MethodPatch,
+			},
+			AllowHeaders: []string{
+				echo.HeaderAuthorization,
+				echo.HeaderContentType,
+				echo.HeaderXRequestedWith,
+				echo.HeaderXRequestID,
+				echo.HeaderVary,
+				"X-PINGOTHER",
+			},
 		}),
 	)
-
-	// Set context logger
-	e.Use(middleware.SetLogger)
 
 	if os.Getenv("HTTP_HEALTHCHECK") != "false" {
 		// Add the healthcheck endpoint
@@ -123,7 +141,18 @@ func NewServer() *HTTPServer {
 	// add HTTPErrorHandler
 	newSrv.Echo.HTTPErrorHandler = newSrv.httpErrorHandler
 
-	return newSrv
+	return newSrv, nil
+}
+
+// MustNewServer is NewServer with fatal-on-error semantics for app main packages.
+func MustNewServer() *HTTPServer {
+	srv, err := NewServer()
+	if err != nil {
+		log := logger.NewComponentLogger(context.TODO(), pkgName)
+		log.Fatal().Err(err).Msg("failed to create http server")
+	}
+
+	return srv
 }
 
 func AddDefaultMiddlewares(srv *HTTPServer) {
@@ -145,6 +174,9 @@ func AddDefaultMiddlewares(srv *HTTPServer) {
 			c.SetRequest(c.Request().WithContext(ctx))
 		},
 	}))
+
+	// Set context logger after request/IP/request-id enrichment.
+	srv.Echo.Use(middleware.SetLogger)
 
 	if os.Getenv("HTTP_PROMETHEUS") != "false" {
 		srv.Echo.Use(echoprometheus.NewMiddleware(pkgName))
@@ -201,22 +233,53 @@ func AddDefaultMiddlewares(srv *HTTPServer) {
 func StartServer(lc fx.Lifecycle, srv *HTTPServer) {
 	lc.Append(
 		fx.Hook{
-			OnStart: func(_ context.Context) error {
+			OnStart: func(ctx context.Context) error {
 				on := fmt.Sprintf("%s:%s", srv.config.Host, srv.config.Port)
 
 				srv.log.Info().Msgf("starting server on %s", on)
 
+				listener, err := new(net.ListenConfig).Listen(ctx, "tcp", on)
+				if err != nil {
+					return fmt.Errorf("listen on %s: %w", on, err)
+				}
+
+				httpSrv := &http.Server{
+					Addr:              on,
+					Handler:           srv.Echo,
+					ReadTimeout:       seconds(srv.config.ReadTimeoutSeconds),
+					ReadHeaderTimeout: seconds(srv.config.ReadHeaderTimeoutSeconds),
+					WriteTimeout:      seconds(srv.config.WriteTimeoutSeconds),
+					IdleTimeout:       seconds(srv.config.IdleTimeoutSeconds),
+				}
+				srv.httpServer = httpSrv
+
+				startErr := make(chan error, 1)
 				go func() {
-					err := srv.Echo.Start(on)
-					if err != nil {
-						srv.log.Info().Err(err).Msgf("stop server %s", on)
+					if err := httpSrv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+						srv.log.Error().Err(err).Msgf("stop server %s", on)
+						startErr <- err
 					}
 				}()
 
-				return nil
+				grace := time.Duration(srv.config.StartupGraceMilliseconds) * time.Millisecond
+				select {
+				case err := <-startErr:
+					return fmt.Errorf("start http server on %s: %w", on, err)
+				case <-time.After(grace):
+					return nil
+				case <-ctx.Done():
+					if err := httpSrv.Close(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+						srv.log.Error().Err(err).Msg("close server after startup cancellation")
+					}
+					return ctx.Err()
+				}
 			},
 			OnStop: func(ctx context.Context) error {
-				err := srv.Echo.Shutdown(ctx)
+				if srv.httpServer == nil {
+					return nil
+				}
+
+				err := srv.httpServer.Shutdown(ctx)
 				if err != nil {
 					srv.log.Info().Err(err).Msg("couldn't stop server")
 				}
@@ -225,4 +288,28 @@ func StartServer(lc fx.Lifecycle, srv *HTTPServer) {
 			},
 		},
 	)
+}
+
+func originAllowlist(value string) func(string) (bool, error) {
+	parts := strings.Split(value, ",")
+	allowed := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			allowed[part] = struct{}{}
+		}
+	}
+
+	return func(origin string) (bool, error) {
+		_, ok := allowed[origin]
+		return ok, nil
+	}
+}
+
+func seconds(value int) time.Duration {
+	if value <= 0 {
+		return 0
+	}
+
+	return time.Duration(value) * time.Second
 }

@@ -3,6 +3,7 @@ package configurator
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -67,36 +68,46 @@ func (c *Configurator) Set(key string, conf any) {
 	c.configMap[key] = config{conf: conf}
 }
 
-// Get returns or creates a Configuration
-func (c *Configurator) Get(key string, conf interface{}) interface{} {
+// Get returns or creates a Configuration.
+func (c *Configurator) Get(key string, conf interface{}) (interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	configuration, exists := c.configMap[key]
 	if exists {
 		if err := copier.CopyWithOption(conf, configuration.conf, copierOption); err != nil {
-			panic(err)
+			return nil, fmt.Errorf("copy configuration %q: %w", key, err)
 		}
 
-		return conf
+		return conf, nil
 	}
 
 	if err := NewConfiguration(conf); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("load configuration %q: %w", key, err)
 	}
 
 	c.configMap[key] = config{conf: conf}
 
-	return conf
+	return conf, nil
 }
 
-// New sets a new configuration
-func (c *Configurator) New(key string, conf interface{}, prefixes ...string) interface{} {
+// MustGet is Get with panic-on-error semantics for app startup code.
+func (c *Configurator) MustGet(key string, conf interface{}) interface{} {
+	cfg, err := c.Get(key, conf)
+	if err != nil {
+		panic(err)
+	}
+
+	return cfg
+}
+
+// New sets a new configuration.
+func (c *Configurator) New(key string, conf interface{}, prefixes ...string) (interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if err := NewConfiguration(conf, prefixes...); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("load configuration %q: %w", key, err)
 	}
 
 	prefix := ""
@@ -107,10 +118,20 @@ func (c *Configurator) New(key string, conf interface{}, prefixes ...string) int
 
 	c.configMap[key] = config{conf: conf, prefix: prefix}
 
-	return conf
+	return conf, nil
 }
 
-func (c *Configurator) Print() {
+// MustNew is New with panic-on-error semantics for app startup code.
+func (c *Configurator) MustNew(key string, conf interface{}, prefixes ...string) interface{} {
+	cfg, err := c.New(key, conf, prefixes...)
+	if err != nil {
+		panic(err)
+	}
+
+	return cfg
+}
+
+func (c *Configurator) Print() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -124,7 +145,7 @@ func (c *Configurator) Print() {
 	for _, v := range c.configMap {
 		err := envconfig.Usagef(v.prefix, v.conf, buf, defaultTableFormatSplit)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("render envconfig usage: %w", err)
 		}
 	}
 
@@ -139,13 +160,16 @@ func (c *Configurator) Print() {
 		newSlice = append(newSlice, arrays)
 	}
 
-	tmpl := prepareTemplate(mdFormat)
+	tmpl, err := prepareTemplate(mdFormat)
+	if err != nil {
+		return err
+	}
 
 	if err := tmpl.Execute(tabs, newSlice); err != nil {
-		panic(err)
+		return fmt.Errorf("execute envconfig usage template: %w", err)
 	}
 	if err := tabs.Flush(); err != nil {
-		panic(err)
+		return fmt.Errorf("flush envconfig usage table: %w", err)
 	}
 
 	bytes := b.Bytes()
@@ -160,6 +184,14 @@ func (c *Configurator) Print() {
 	}
 
 	if _, err := io.Copy(os.Stdout, &b); err != nil {
+		return fmt.Errorf("write envconfig usage: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Configurator) MustPrint() {
+	if err := c.Print(); err != nil {
 		panic(err)
 	}
 }
@@ -174,7 +206,7 @@ func findElementByIndex(slice []string, index int) string {
 	return ""
 }
 
-func prepareTemplate(format string) *template.Template {
+func prepareTemplate(format string) (*template.Template, error) {
 	// Specify the default usage template functions
 	functions := template.FuncMap{
 		"usage_key":         func(v []string) string { return findElementByIndex(v, usageKeyIndex) },
@@ -186,8 +218,8 @@ func prepareTemplate(format string) *template.Template {
 
 	tmpl, err := template.New("envconfig").Funcs(functions).Parse(format)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("parse envconfig usage template: %w", err)
 	}
 
-	return tmpl
+	return tmpl, nil
 }

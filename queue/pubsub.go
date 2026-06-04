@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/webdevelop-pro/go-common/logger"
@@ -50,6 +51,8 @@ type PubSubListener struct {
 	client  *pclient.Client
 	deduper Deduper
 	service string
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
 }
 
 type PubSubRoute struct {
@@ -63,26 +66,48 @@ type PubSubRoute struct {
 	MsgsListener     func(ctx context.Context, msg pclient.Message) error
 }
 
-func New(routes []PubSubRoute) PubSubListener {
+func New(routes []PubSubRoute) (*PubSubListener, error) {
 	return newListener(routes, "", nil)
+}
+
+// MustNew is New with fatal-on-error semantics for app main packages.
+func MustNew(routes []PubSubRoute) *PubSubListener {
+	listener, err := New(routes)
+	if err != nil {
+		log := logger.NewComponentLogger(context.TODO(), "pubsub")
+		log.Fatal().Err(err).Msg("failed to create pubsub listener")
+	}
+
+	return listener
 }
 
 // NewWithDeduper is New plus message-level deduplication. service identifies
 // this consumer in the dedup store (one row per service+message); d persists
 // the claim/processed/failed state. A nil d behaves exactly like New.
-func NewWithDeduper(routes []PubSubRoute, service string, d Deduper) PubSubListener {
+func NewWithDeduper(routes []PubSubRoute, service string, d Deduper) (*PubSubListener, error) {
 	return newListener(routes, service, d)
 }
 
-func newListener(routes []PubSubRoute, service string, d Deduper) PubSubListener {
+// MustNewWithDeduper is NewWithDeduper with fatal-on-error semantics for app main packages.
+func MustNewWithDeduper(routes []PubSubRoute, service string, d Deduper) *PubSubListener {
+	listener, err := NewWithDeduper(routes, service, d)
+	if err != nil {
+		log := logger.NewComponentLogger(context.TODO(), "pubsub")
+		log.Fatal().Err(err).Msg("failed to create pubsub listener")
+	}
+
+	return listener
+}
+
+func newListener(routes []PubSubRoute, service string, d Deduper) (*PubSubListener, error) {
 	log := logger.NewComponentLogger(context.TODO(), "pubsub")
 
 	client, err := pclient.New(context.Background())
 	if err != nil {
-		log.Fatal().Stack().Err(err).Msg(pclient.ErrConfigParse.Error())
+		return nil, fmt.Errorf("create pubsub client: %w", err)
 	}
 
-	p := PubSubListener{
+	p := &PubSubListener{
 		log:     log,
 		client:  client,
 		deduper: d,
@@ -91,35 +116,78 @@ func newListener(routes []PubSubRoute, service string, d Deduper) PubSubListener
 
 	err = p.AddRoutes(routes)
 	if err != nil {
-		log.Fatal().Stack().Err(err).Msg(ErrAddRoute.Error())
+		client.Close()
+		return nil, fmt.Errorf("%w: %w", ErrAddRoute, err)
 	}
 
-	return p
+	return p, nil
 }
 
-func (p PubSubListener) Start() {
-	ctx := context.Background()
+func (p *PubSubListener) Start(ctx context.Context) error {
+	if p == nil || p.client == nil {
+		return pclient.ErrNotConnected
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	for _, route := range p.routes {
+		switch route.Name {
+		case "webhooks", "events", "messages":
+		default:
+			return fmt.Errorf("%w: %s", ErrNotCorrectTopic, route.Name)
+		}
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	p.cancel = cancel
+
 	for _, b := range p.routes {
 		br := b
 
 		switch br.Name {
 		case "webhooks":
 			cb := p.dedupWebhooks(br.Topic, br.WebhooksListener)
-			go p.runListener(br.Name, br.Subscription, func() error {
-				return p.client.ListenWebhooks(ctx, br.Subscription, br.Topic, cb)
-			})
+			p.wg.Add(1)
+			go func() {
+				defer p.wg.Done()
+				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
+					return p.client.ListenWebhooks(ctx, br.Subscription, br.Topic, cb)
+				})
+			}()
 		case "events":
 			cb := p.dedupEvents(br.Topic, br.EventsListener)
-			go p.runListener(br.Name, br.Subscription, func() error {
-				return p.client.ListenEvents(ctx, br.Subscription, br.Topic, cb)
-			})
+			p.wg.Add(1)
+			go func() {
+				defer p.wg.Done()
+				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
+					return p.client.ListenEvents(ctx, br.Subscription, br.Topic, cb)
+				})
+			}()
 		case "messages":
-			go p.runListener(br.Name, br.Subscription, func() error {
-				return p.client.ListenRawMsgs(ctx, br.Subscription, br.Topic, br.MsgsListener)
-			})
-		default:
-			p.log.Fatal().Stack().Msgf("%s %s", ErrNotCorrectTopic.Error(), br.Name)
+			p.wg.Add(1)
+			go func() {
+				defer p.wg.Done()
+				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
+					return p.client.ListenRawMsgs(ctx, br.Subscription, br.Topic, br.MsgsListener)
+				})
+			}()
 		}
+	}
+
+	return nil
+}
+
+func (p *PubSubListener) Close() {
+	if p == nil {
+		return
+	}
+	if p.cancel != nil {
+		p.cancel()
+	}
+	p.wg.Wait()
+	if p.client != nil {
+		p.client.Close()
 	}
 }
 
@@ -143,14 +211,23 @@ func reconnectWindowDur() time.Duration {
 // reconnectWindow — e.g. the subscription was deleted and never recreated —
 // runListener panics so the process is restarted by its supervisor instead of
 // silently busy-looping forever.
-func (p PubSubListener) runListener(name, subscription string, listen func() error) {
+func (p *PubSubListener) runListener(ctx context.Context, name, subscription string, listen func(context.Context) error) {
 	var failingSince time.Time
 
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		start := time.Now()
-		err := listen()
+		err := listen(ctx)
 		if err == nil {
 			// Graceful stop (context cancelled).
+			return
+		}
+		if ctx.Err() != nil {
 			return
 		}
 
@@ -179,7 +256,11 @@ func (p PubSubListener) runListener(name, subscription string, listen func() err
 			Str("subscription", subscription).
 			Dur("down_for", downFor).
 			Msg("pubsub listener disconnected, reconnecting")
-		time.Sleep(reconnectDelay)
+		select {
+		case <-time.After(reconnectDelay):
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -198,7 +279,7 @@ func attemptOf(a *int) int {
 
 // dedupEvents wraps an events callback with claim→handle→finalize. When no
 // deduper is configured it returns the original callback unchanged.
-func (p PubSubListener) dedupEvents(
+func (p *PubSubListener) dedupEvents(
 	topic string,
 	fn func(context.Context, pclient.Event) error,
 ) func(context.Context, pclient.Event) error {
@@ -225,7 +306,7 @@ func (p PubSubListener) dedupEvents(
 }
 
 // dedupWebhooks is the webhook-payload counterpart of dedupEvents.
-func (p PubSubListener) dedupWebhooks(
+func (p *PubSubListener) dedupWebhooks(
 	topic string,
 	fn func(context.Context, pclient.Webhook) error,
 ) func(context.Context, pclient.Webhook) error {

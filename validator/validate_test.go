@@ -75,7 +75,7 @@ func TestValidator(t *testing.T) {
 				t.Error("error should be nil")
 			}
 			if scenario.expectedError {
-				assert.Equal(t, scenario.expectedResult, err.(*response.Error).Message)
+				assert.EqualValues(t, scenario.expectedResult, err.(*response.Error).Message.Map())
 			}
 		})
 	}

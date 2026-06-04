@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,19 @@ func testEchoLogger(t *testing.T, ctx context.Context, expected string, logF fun
 	tests.CompareJSONBody(t, []byte(actual), []byte(expected))
 }
 
+func googleCloudExpected(expected string) string {
+	if !strings.Contains(expected, `"level": "error"`) {
+		return expected
+	}
+
+	return strings.Replace(
+		expected,
+		"{",
+		`{"@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",`,
+		1,
+	)
+}
+
 func testBaseLogger(t *testing.T, ctx context.Context, expected string, logF func(log logger.Logger)) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -54,6 +68,7 @@ func testBaseLogger(t *testing.T, ctx context.Context, expected string, logF fun
 
 	actual := ReadStdout(r, w)
 
+	expected = googleCloudExpected(expected)
 	tests.CompareJSONBody(t, []byte(actual), []byte(expected))
 }
 
@@ -203,17 +218,17 @@ func TestLog_ErrorWithStack(t *testing.T) {
 			"stack": [
 				{
 					"func": "TestLog_ErrorWithStack",
-					"line": "197",
+					"line": "%any%",
 					"source": "loggers_test.go"
 				},
 				{
 					"func": "tRunner",
-					"line": "1689",
+					"line": "%any%",
 					"source": "testing.go"
 				},
 				{
 					"func": "goexit",
-					"line": "1695",
+					"line": "%any%",
 					"source": "asm_amd64.s"
 				}
 			],

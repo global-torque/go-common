@@ -1,0 +1,18 @@
+go 1.25.8
+
+use (
+	./configurator
+	./context
+	./db
+	./docker
+	./httputils
+	./logger
+	./logger/example
+	./misc
+	./queue
+	./response
+	./server
+	./tests
+	./validator
+	./verser
+)

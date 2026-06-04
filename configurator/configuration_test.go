@@ -31,7 +31,7 @@ func TestAlternativeEnvPath(t *testing.T) {
 		Port uint16 `required:"true"`
 	}
 
-	os.Setenv("ENV_FILE", ".env.tests")
+	t.Setenv("ENV_FILE", ".env.tests")
 	cfg := &ServerConfig{}
 	err := NewConfiguration(cfg, "")
 	if err != nil {
@@ -60,12 +60,13 @@ func TestRequiredEnvs(t *testing.T) {
 }
 
 func TestRequiredString(t *testing.T) {
+	t.Setenv("ENV_FILE", "")
 	t.Setenv("CFG_REQUIRED", "  value  ")
 	t.Setenv("CFG_OPTIONAL", "")
 
 	type Config struct {
-		Required RequiredString `required:"true"`
-		Optional string         `required:"true"`
+		Required RequiredString
+		Optional string `required:"true"`
 	}
 
 	cfg := &Config{}
@@ -81,14 +82,46 @@ func TestRequiredString(t *testing.T) {
 }
 
 func TestRequiredStringRejectsBlankValue(t *testing.T) {
+	t.Setenv("ENV_FILE", "")
 	t.Setenv("CFG_REQUIRED", "   ")
 
 	type Config struct {
-		Required RequiredString `required:"true"`
+		Required RequiredString
 	}
 
 	cfg := &Config{}
 	if err := NewConfiguration(cfg, "CFG"); err == nil {
 		t.Fatal("expected blank required string to fail")
 	}
+}
+
+func TestRequiredStringRejectsMissingValueWithoutRequiredTag(t *testing.T) {
+	t.Setenv("ENV_FILE", "")
+	unsetEnv(t, "CFG_REQUIRED")
+
+	type Config struct {
+		Required RequiredString
+	}
+
+	cfg := &Config{}
+	if err := NewConfiguration(cfg, "CFG"); err == nil {
+		t.Fatal("expected missing required string to fail")
+	}
+}
+
+func unsetEnv(t *testing.T, key string) {
+	t.Helper()
+
+	oldValue, exists := os.LookupEnv(key)
+	if err := os.Unsetenv(key); err != nil {
+		t.Fatalf("cannot unset %s: %v", key, err)
+	}
+
+	t.Cleanup(func() {
+		if exists {
+			_ = os.Setenv(key, oldValue)
+			return
+		}
+		_ = os.Unsetenv(key)
+	})
 }

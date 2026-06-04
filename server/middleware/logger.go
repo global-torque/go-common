@@ -39,7 +39,7 @@ func SetLogger(next echo.HandlerFunc) echo.HandlerFunc {
 		ctx = keys.SetCtxValue(ctx, keys.LogInfo, logInfo)
 
 		// create sub logger
-		log := logger.NewComponentLogger(c.Request().Context(), "echo")
+		log := logger.NewComponentLogger(ctx, "echo")
 		// add logger to context
 		ctx = log.WithContext(ctx)
 		// enrich context

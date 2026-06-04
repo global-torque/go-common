@@ -3,6 +3,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -60,23 +61,21 @@ func DefaultStdoutLogger(c context.Context, logLevel string) Logger {
 	return NewLogger(c, "default", logLevel, os.Stdout)
 }
 
-// NewComponentLogger return default logger instance with custom component
-func NewComponentLogger(c context.Context, component string) Logger {
-	cfg := Config{}
-	err := configurator.NewConfiguration(&cfg, "log")
+// NewComponentLoggerE returns a default logger instance with a custom component.
+func NewComponentLoggerE(c context.Context, component string) (Logger, error) {
+	cfg, err := loadConfig("log")
+	log := NewLogger(c, component, cfg.LogLevel, outputForConfig(cfg))
 	if err != nil {
-		panic(err)
+		log.Error().Err(err).Msg("cannot parse logger config, using defaults")
 	}
 
-	var output io.Writer
-	// Beautiful output
-	if cfg.LogConsole {
-		output = zerolog.NewConsoleWriter()
-	} else {
-		output = os.Stdout
-	}
+	return log, err
+}
 
-	return NewLogger(c, component, cfg.LogLevel, output)
+// NewComponentLogger return default logger instance with custom component.
+func NewComponentLogger(c context.Context, component string) Logger {
+	log, _ := NewComponentLoggerE(c, component)
+	return log
 }
 
 // FromCtx return default logger instance with custom component
@@ -90,21 +89,39 @@ func FromCtx(ctx context.Context, component string) *zerolog.Logger {
 	return log
 }
 
-// NewDefaultLogger return default logger instance
-func NewDefaultLogger() Logger {
-	cfg := Config{}
-	err := configurator.NewConfiguration(&cfg, "log")
+// NewDefaultLoggerE returns the default logger instance.
+func NewDefaultLoggerE() (Logger, error) {
+	cfg, err := loadConfig("log")
+	log := NewLogger(context.Background(), "", cfg.LogLevel, outputForConfig(cfg))
 	if err != nil {
-		panic(err)
+		log.Error().Err(err).Msg("cannot parse logger config, using defaults")
 	}
 
-	var output io.Writer
-	// Beautiful output
+	return log, err
+}
+
+// NewDefaultLogger return default logger instance.
+func NewDefaultLogger() Logger {
+	log, _ := NewDefaultLoggerE()
+	return log
+}
+
+func loadConfig(prefix string) (Config, error) {
+	cfg := Config{LogLevel: zerolog.InfoLevel.String()}
+	if err := configurator.NewConfiguration(&cfg, prefix); err != nil {
+		return cfg, fmt.Errorf("load logger configuration: %w", err)
+	}
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = zerolog.InfoLevel.String()
+	}
+
+	return cfg, nil
+}
+
+func outputForConfig(cfg Config) io.Writer {
 	if cfg.LogConsole {
-		output = zerolog.NewConsoleWriter()
-	} else {
-		output = os.Stdout
+		return zerolog.NewConsoleWriter()
 	}
 
-	return NewLogger(context.Background(), "", cfg.LogLevel, output)
+	return os.Stdout
 }

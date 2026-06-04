@@ -40,6 +40,10 @@ func NewPoolFromConfig(ctx context.Context, pgConfig *pgxpool.Config, log logger
 }
 
 func newPool(ctx context.Context, pgConfig *pgxpool.Config, log logger.Logger, retries int) (*pgxpool.Pool, error) {
+	if retries < 0 {
+		return nil, fmt.Errorf("db max retries must be non-negative")
+	}
+
 	pg, err := backoff.RetryWithData(
 		func() (*pgxpool.Pool, error) {
 			log.Debug().Msg("Connecting to db")
@@ -75,7 +79,10 @@ func GetConfigPool(log logger.Logger) (*pgxpool.Config, error) {
 		return nil, fmt.Errorf("parse db config: %w", err)
 	}
 
-	normalizeSslMode(&cfg, log)
+	err = validateDBConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	pgConfig, err := pgxpool.ParseConfig(GetPoolConnString(&cfg))
 	if err != nil {

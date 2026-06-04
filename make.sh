@@ -39,6 +39,10 @@ init() {
   PKG_LIST=$(go list ./... | grep -v /lib/)
 }
 
+module_dirs() {
+  find . -name go.mod -not -path './.git/*' -exec dirname {} \; | sort
+}
+
 build() {
   GIT_COMMIT=$(git rev-parse --short HEAD)
   BUILD_DATE=$(date "+%Y%m%d")
@@ -83,34 +87,31 @@ install)
   ;;
 
 lint)
-  dirlist=`ls`
-  for ddir in $dirlist[@]
-  do
-    if [ -d $ddir ]
-    then
-      if [ -f "$ddir/go.mod" ]; then
-        cd $ddir
-        golangci-lint -c ../.golangci.yml run --fix $2 $3 || echo 'not ok'
-        cd ../
-      fi
-    fi
+  shift
+  module_dirs | while IFS= read -r ddir; do
+    (cd "$ddir" && golangci-lint -c "$WORK_DIR/.golangci.yml" run "$@")
+  done
+  ;;
+
+vet)
+  shift
+  module_dirs | while IFS= read -r ddir; do
+    (cd "$ddir" && go vet ./... "$@")
   done
   ;;
 
 test)
-  dirlist=`ls`
-  set -a
-  for ddir in $dirlist[@]
-  do
-    if [ -d $ddir ]
-    then
-      if [ -f "$ddir/go.mod" ]; then
-        cd $ddir
-        source .env
-        go test -count=1 -p 1 ./... $2 $3
-        cd ../
+  shift
+  module_dirs | while IFS= read -r ddir; do
+    (
+      cd "$ddir"
+      if [ "${MAKE_LOAD_ENV:-false}" = "true" ] && [ -f ".env" ]; then
+        set -a
+        . ./.env
+        set +a
       fi
-    fi
+      go test -count=1 -p 1 ./... "$@"
+    )
   done
   ;;
 
@@ -187,35 +188,19 @@ deploy-dev)
 
 update-version)
   find ./ -name "go.mod" -exec $SED -i "s/s/(go-common.*) $2/\1 $3/g" {} \;
-  dirlist=`ls`
-  for ddir in $dirlist[@]
-  do
-    if [ -d $ddir ]; then
-      if [ -f "$ddir/go.mod" ]; then
-        cd $ddir; rm go.sum; go mod tidy; cd ..;
-      fi
-    fi
+  module_dirs | while IFS= read -r ddir; do
+    (cd "$ddir" && rm -f go.sum && go mod tidy)
   done
   ;;
 
 release-all-pkgs)
-  dirlist=`ls .`
-  for ddir in $dirlist[@]
-  do
-    if [ -d $ddir ]; then
-      if [ -f "$ddir/go.mod" ]; then
-        # echo "$ddir/$2 $3 $4"
-        # version and comment
-        git tag -a $ddir/$2 $3 "$4"
-        git push origin $ddir/$2
-      fi
-    fi
+  module_dirs | while IFS= read -r ddir; do
+    ddir=${ddir#./}
+    # echo "$ddir/$2 $3 $4"
+    # version and comment
+    git tag -a $ddir/$2 $3 "$4"
+    git push origin $ddir/$2
   done
-  # FOR SOME REASON verser dir left behind
-  ddir="verser"
-  cd $ddir
-  git tag -a $ddir/$2 $3 "$4"
-  git push origin $ddir/$2
   ;;
 
 help)

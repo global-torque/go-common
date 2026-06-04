@@ -12,66 +12,65 @@ permissions:
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # golangci:
-  #   name: lint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.24'
-  #         cache: false
-  #     - name: golangci-lint
-  #       uses: golangci/golangci-lint-action@v4
-  #       with:
-  #         version: v1.61.0
-  #         args: -c .golangci.yml
-  #         only-new-issues: true
-  # tests:
-  #   # The type of runner that the job will run on
-  #   runs-on: ubuntu-latest
+  lint:
+    name: lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.8'
+          cache: false
+      - name: Static checks
+        run: ./make.sh vet
 
-  #   services:
-  #     pubsub_emulator:
-  #       image: 3apag/pubsub-emulator
-  #       env:
-  #         PUBSUB_PROJECT_ID: webdevelop-live
-  #         PUBSUB_LISTEN_ADDRESS: 0.0.0.0:8232
-  #       ports:
-  #         - 8232:8232
-
-  #     # Label used to access the service container
-  #     postgres:
-  #       image: postgres
-  #       ports:
-  #         - 5439:5439
-  #       env:
-  #         POSTGRES_USER: postgres
-  #         POSTGRES_DB: postgres
-  #         POSTGRES_PASSWORD: password
-  #         PGPORT: 5439
-  #         POSTGRES_PORT: 5439
-  #       # Set health checks to wait until postgres has started
-  #       options: >-
-  #         --health-cmd pg_isready
-  #         --health-interval 1s
-  #         --health-timeout 1s
-  #         --health-retries 50
-
-  #   container:
-  #     image: cr.webdevelop.us/webdevelop-pro/go-common:latest-dev
-  #     credentials:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #   steps:
-  #   - uses: actions/checkout@v2
-
-  #   - name: Run tests
-  #     run: source .env.example ./make.sh test
-  #     env:
-  #       TEST_APP_START: "true"
+  tests:
+    name: tests
+    runs-on: ubuntu-22.04
+    services:
+      pubsub_emulator:
+        image: 3apag/pubsub-emulator
+        ports:
+          - 8085:8232
+        env:
+          PUBSUB_PROJECT_ID: webdevelop-live
+      postgres:
+        image: postgres:18-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: invest_platform
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d invest_platform"
+          --health-interval 1s
+          --health-timeout 1s
+          --health-retries 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.8'
+          cache: false
+      - name: Run tests
+        env:
+          PUBSUB_EMULATOR_HOST: localhost:8085
+          PUBSUB_PROJECT_ID: webdevelop-live
+          DB_TYPE: postgres
+          DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_DATABASE: invest_platform
+          DB_APP_NAME: go_common
+          DB_SSL_MODE: disable
+        run: ./make.sh test
 
   build:
+    needs:
+      - lint
+      - tests
     runs-on: ubuntu-22.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -109,7 +108,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: docker
+          context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: |

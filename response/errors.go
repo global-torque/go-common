@@ -20,13 +20,21 @@ var (
 )
 
 func ErrBadRequest(err error) *Error {
-	return NewError(err, StatusBadRequest, map[string][]string{"__error__": {err.Error()}})
+	return NewError(err, StatusBadRequest, SingleErrorMessage(errorText(err)))
 }
 
 func ErrUnauthorized(err error) *Error {
-	return NewError(err, StatusUnauthorized, map[string][]string{"__error__": {err.Error()}})
+	return NewError(err, StatusUnauthorized, SingleErrorMessage(errorText(err)))
 }
 
 func ErrInternalError(err error) *Error {
-	return NewError(err, StatusInternalError, map[string][]string{"__error__": {err.Error()}})
+	return NewError(err, StatusInternalError, SingleErrorMessage(errorText(err)))
+}
+
+func errorText(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	return err.Error()
 }

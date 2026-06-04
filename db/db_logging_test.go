@@ -207,24 +207,7 @@ func TestLogger_DBQuery_ERROR(t *testing.T) {
 			"data": {
 				"args": [],
 				"err": {
-					"Code": "42703",
-					"ColumnName": "",
-					"ConstraintName": "",
-					"DataTypeName": "",
-					"Detail": "",
-					"File": "parse_relation.c",
-					"Hint": "",
-					"InternalPosition": 0,
-					"InternalQuery": "",
-					"Line": 3716,
-					"Message": "column \"asd\" does not exist",
-					"Position": 8,
-					"Routine": "errorMissingColumn",
-					"SchemaName": "",
-					"Severity": "ERROR",
-					"SeverityUnlocalized": "ERROR",
-					"TableName": "",
-					"Where": ""
+					"ParseComplete": false
 				},
 				"pid": "%any%",
 				"sql": "select asd;",
@@ -232,7 +215,7 @@ func TestLogger_DBQuery_ERROR(t *testing.T) {
 			},
 			"error": "ERROR: column \"asd\" does not exist (SQLSTATE 42703)",
 			"level": "error",
-			"message": "column \"asd\" does not exist",
+			"message": "ERROR: column \"asd\" does not exist (SQLSTATE 42703)",
 			"serviceContext": {
 				"httpRequest": {
 					"method": "POST",

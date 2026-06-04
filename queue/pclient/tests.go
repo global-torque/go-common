@@ -3,6 +3,7 @@ package pclient
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 type contextKey string
@@ -29,18 +30,40 @@ func NewFixture(topic, subscription string, initData byte) Fixture {
 
 type FixturesManager struct {
 	client   *Client
+	ctx      context.Context
+	initErr  error
 	fixtures []Fixture
 }
 
 func NewFixturesManager(ctx context.Context, fixtures ...Fixture) FixturesManager {
-	client, _ := New(ctx)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	client, err := New(ctx)
+	if err != nil {
+		return FixturesManager{
+			ctx:      ctx,
+			initErr:  fmt.Errorf("create pubsub client: %w", err),
+			fixtures: fixtures,
+		}
+	}
+
 	return FixturesManager{
 		client:   client,
+		ctx:      ctx,
 		fixtures: fixtures,
 	}
 }
 
 func (pubSubF FixturesManager) CleanAndApply() error {
+	if pubSubF.initErr != nil {
+		return pubSubF.initErr
+	}
+	if pubSubF.client == nil {
+		return ErrNotConnected
+	}
+
 	for _, fixture := range pubSubF.fixtures {
 		err := pubSubF.Clean(fixture.topic, fixture.subscription)
 		if err != nil {
@@ -58,7 +81,20 @@ func (pubSubF FixturesManager) SetCTX(ctx context.Context) context.Context {
 }
 
 func (pubSubF FixturesManager) Clean(topic string, subscription string) error {
-	ctx := context.Background()
+	if pubSubF.initErr != nil {
+		return pubSubF.initErr
+	}
+	if pubSubF.client == nil {
+		return ErrNotConnected
+	}
+
+	baseCtx := pubSubF.ctx
+	if baseCtx == nil {
+		baseCtx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(baseCtx, 15*time.Second)
+	defer cancel()
+
 	ok, err := pubSubF.client.SubscriptionExist(ctx, subscription)
 	if err != nil {
 		return fmt.Errorf("failed check subscription: %w", err)

@@ -66,21 +66,21 @@ func RunTableTest(t *testing.T, ctx context.Context, fixtureMngrs []FixturesMana
 		return
 	}
 
-	for _, fixtures := range fixtureMngrs {
-		err := fixtures.CleanAndApply()
-		if err != nil {
-			panic(err)
-		}
-		ctx = fixtures.SetCTX(ctx)
-	}
-
 	// ToDo
 	// Run in parallel
 	for _, s := range scenarios {
 		scenario := s
 		t.Run(tableTest.Description+": "+scenario.Description, func(t *testing.T) {
+			scenarioCtx := ctx
+			for _, fixtures := range fixtureMngrs {
+				if err := fixtures.CleanAndApply(); err != nil {
+					t.Fatalf("clean and apply fixtures: %v", err)
+				}
+				scenarioCtx = fixtures.SetCTX(scenarioCtx)
+			}
+
 			for _, action := range scenario.TestActions {
-				err := action(TestContext{t, ctx})
+				err := action(TestContext{t, scenarioCtx})
 				assert.NoError(t, err, "test failed")
 			}
 		})
@@ -161,7 +161,7 @@ func AllowAny(src, dst interface{}) interface{} {
 func CompareJSONBody(t *testing.T, actual, expected []byte) {
 	t.Helper()
 
-	var actualBody, expectedBody map[string]interface{}
+	var actualBody, expectedBody any
 
 	if len(actual) == 0 {
 		assert.Fail(t, "server return no data, nothing to compare")
@@ -186,7 +186,7 @@ func CompareJSONBody(t *testing.T, actual, expected []byte) {
 		return
 	}
 
-	expectedBody = AllowDictAny(actualBody, expectedBody)
+	expectedBody = AllowAny(actualBody, expectedBody)
 
 	ok := assert.EqualValuesf(t, expectedBody, actualBody, "responses not equal")
 	if !ok {

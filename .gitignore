@@ -125,7 +125,6 @@ modules.xml
 .env.test
 *.dump
 
-go.work
 /app
 tmp/
 /http

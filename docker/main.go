@@ -38,7 +38,7 @@ func main() {
 			RevisionID: revisionID,
 		},
 	})
-	verser.SetServiVersRepoRevis(service, version, repository, revisionID)
+	verser.SetServiceVersionRepositoryRevision(service, version, repository, revisionID)
 	fx.New(
 		fx.Provide(
 			// logger

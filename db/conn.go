@@ -34,6 +34,10 @@ func NewConnFromConfig(ctx context.Context, pgConfig *pgx.ConnConfig, log logger
 }
 
 func newConn(ctx context.Context, pgConfig *pgx.ConnConfig, log logger.Logger, retries int) (*pgx.Conn, error) {
+	if retries < 0 {
+		return nil, fmt.Errorf("db max retries must be non-negative")
+	}
+
 	pg, err := backoff.RetryWithData(
 		func() (*pgx.Conn, error) {
 			log.Debug().Msg("Connecting to db")
@@ -78,7 +82,10 @@ func GetConfigConn(log logger.Logger) (*pgx.ConnConfig, error) {
 		return nil, fmt.Errorf("parse db config: %w", err)
 	}
 
-	normalizeSslMode(&cfg, log)
+	err = validateDBConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	pgConfig, err := pgx.ParseConfig(GetConnString(&cfg))
 	if err != nil {
@@ -104,27 +111,4 @@ func GetConnString(cfg *Config) string {
 		Path:     cfg.Database,
 		RawQuery: query.Encode(),
 	}).String()
-}
-
-// validSslModes is the set accepted by libpq / pgx.
-var validSslModes = map[string]struct{}{
-	"disable":     {},
-	"allow":       {},
-	"prefer":      {},
-	"require":     {},
-	"verify-ca":   {},
-	"verify-full": {},
-}
-
-// normalizeSslMode coerces an empty or unrecognized SslMode to "disable" and warns.
-func normalizeSslMode(cfg *Config, log logger.Logger) {
-	if cfg.SslMode == "" {
-		cfg.SslMode = "disable"
-		return
-	}
-	if _, ok := validSslModes[cfg.SslMode]; ok {
-		return
-	}
-	log.Warn().Str("sslmode", cfg.SslMode).Msg("invalid DB_SSL_MODE, falling back to disable")
-	cfg.SslMode = "disable"
 }

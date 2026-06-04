@@ -3,6 +3,7 @@ package qtests
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/webdevelop-pro/go-common/configurator"
 	"github.com/webdevelop-pro/go-common/queue/pclient"
@@ -11,6 +12,8 @@ import (
 type contextKey string
 
 const queueKey contextKey = "queue"
+
+const fixtureOperationTimeout = 5 * time.Second
 
 type Fixture struct {
 	topic        string
@@ -28,26 +31,61 @@ func NewFixture(topic, subscription, filePath string) Fixture {
 
 type FixturesManager struct {
 	queue    *pclient.Client
-	cfg      pclient.Config
+	ctx      context.Context
+	initErr  error
 	fixtures []Fixture
 }
 
 func NewFixturesManager(ctx context.Context, fixtures ...Fixture) FixturesManager {
-	configurator.LoadDotEnv()
-	cfg := pclient.Config{}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := configurator.LoadDotEnv(); err != nil {
+		return FixturesManager{
+			ctx:      ctx,
+			initErr:  fmt.Errorf("load .env: %w", err),
+			fixtures: fixtures,
+		}
+	}
 
-	pclient, err := pclient.New(ctx)
+	client, err := pclient.New(ctx)
 	if err != nil {
-		panic(err)
+		return FixturesManager{
+			ctx:      ctx,
+			initErr:  fmt.Errorf("create pubsub client: %w", err),
+			fixtures: fixtures,
+		}
 	}
 	return FixturesManager{
-		queue:    pclient,
-		cfg:      cfg,
+		queue:    client,
+		ctx:      ctx,
 		fixtures: fixtures,
 	}
 }
 
+func (f FixturesManager) operationContext() (context.Context, context.CancelFunc) {
+	baseCtx := f.ctx
+	if baseCtx == nil {
+		baseCtx = context.Background()
+	}
+
+	return context.WithTimeout(baseCtx, fixtureOperationTimeout)
+}
+
+func (f FixturesManager) Close() {
+	if f.queue != nil {
+		f.queue.Close()
+	}
+}
+
 func (f FixturesManager) CleanAndApply() error {
+	if f.initErr != nil {
+		return f.initErr
+	}
+	if f.queue == nil {
+		return pclient.ErrNotConnected
+	}
+
 	for _, fixture := range f.fixtures {
 		err := f.Clean(fixture.topic, fixture.subscription)
 		if err != nil {
@@ -61,39 +99,58 @@ func (f FixturesManager) CleanAndApply() error {
 }
 
 func (f FixturesManager) SetCTX(ctx context.Context) context.Context {
-	ctx = context.WithValue(ctx, "testm", "test test")
 	return context.WithValue(ctx, queueKey, f.queue)
 }
 
-func (f FixturesManager) Clean(topic string, subscription string) error {
-	ctx := context.Background()
-	ok, err := f.queue.SubscriptionExist(ctx, subscription)
-	if err != nil {
-		return fmt.Errorf("failed check subscription: %w", err)
+func (f FixturesManager) Delete(topic string, subscription string) error {
+	if f.initErr != nil {
+		return f.initErr
 	}
-	if ok {
+	if f.queue == nil {
+		return pclient.ErrNotConnected
+	}
+
+	if subscription != "" {
+		ctx, cancel := f.operationContext()
 		err := f.queue.DeleteSubscription(ctx, subscription)
+		cancel()
 		if err != nil {
 			return fmt.Errorf("failed delete subscription: %w", err)
 		}
 	}
-	ok, err = f.queue.TopicExist(ctx, topic)
+
+	ctx, cancel := f.operationContext()
+	err := f.queue.DeleteTopic(ctx, topic)
+	cancel()
 	if err != nil {
-		return fmt.Errorf("failed check topic: %w", err)
-	}
-	if ok {
-		err = f.queue.DeleteTopic(ctx, topic)
-		if err != nil {
-			return fmt.Errorf("failed delete topic: %w", err)
-		}
+		return fmt.Errorf("failed delete topic: %w", err)
 	}
 
-	_, err = f.queue.CreateTopic(ctx, topic)
+	return nil
+}
+
+func (f FixturesManager) Clean(topic string, subscription string) error {
+	if f.initErr != nil {
+		return f.initErr
+	}
+	if f.queue == nil {
+		return pclient.ErrNotConnected
+	}
+
+	if err := f.Delete(topic, subscription); err != nil {
+		return err
+	}
+
+	ctx, cancel := f.operationContext()
+	_, err := f.queue.CreateTopic(ctx, topic)
+	cancel()
 	if err != nil {
 		return fmt.Errorf("failed create topic: %w", err)
 	}
 
+	ctx, cancel = f.operationContext()
 	_, err = f.queue.CreateSubscription(ctx, subscription, topic)
+	cancel()
 	if err != nil {
 		return fmt.Errorf("failed create subscription: %w", err)
 	}

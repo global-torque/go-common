@@ -1,14 +1,12 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-
 	"github.com/webdevelop-pro/go-common/logger"
-
 	"github.com/webdevelop-pro/go-common/response"
 )
 
@@ -51,7 +49,7 @@ func ErrorBadRequestResponse(e echo.Context, err error) error {
 
 		switch {
 		case errors.As(err, &HTTPError):
-			resp = map[string]interface{}{"__error__": []string{err.(*echo.HTTPError).Message.(string)}}
+			resp = map[string]interface{}{"__error__": []string{fmt.Sprint(HTTPError.Message)}}
 		default:
 			resp = map[string]interface{}{"__error__": []string{err.Error()}}
 		}
@@ -73,34 +71,24 @@ func (s *HTTPServer) httpErrorHandler(err error, c echo.Context) {
 	case errors.As(err, &echoErr):
 		he = &response.Error{
 			StatusCode: echoErr.Code,
-			Message:    echoErr.Message,
+			Message:    response.MessagesFromAny(echoErr.Message),
 		}
 	case errors.As(err, &he):
 		// do nothing
 	default:
 		he = &response.Error{
 			StatusCode: http.StatusInternalServerError,
-			Message:    http.StatusText(http.StatusInternalServerError),
+			Message:    response.SingleErrorMessage(http.StatusText(http.StatusInternalServerError)),
 		}
 	}
 
 	code := he.StatusCode
-	message := he.Message
-
-	switch m := he.Message.(type) {
-	case string:
-		message = echo.Map{"__error__": []string{m}}
-	case json.Marshaler:
-		// do nothing - this type knows how to format itself to JSON
-	case error:
-		message = echo.Map{"__error__": []string{m.Error()}}
-	}
 
 	// Send response
 	if c.Request().Method == http.MethodHead { // Issue #608
 		err = c.NoContent(he.StatusCode)
 	} else {
-		err = c.JSON(code, message)
+		err = c.JSON(code, he.Message)
 	}
 
 	if err != nil {

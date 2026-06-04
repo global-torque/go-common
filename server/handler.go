@@ -1,9 +1,8 @@
 package server
 
 import (
-	"go.uber.org/fx"
-
 	"github.com/webdevelop-pro/go-common/server/route"
+	"go.uber.org/fx"
 )
 
 func InitHandlerGroups(srv *HTTPServer, rg route.ConfiguratorIn) {

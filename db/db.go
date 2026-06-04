@@ -3,6 +3,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -33,14 +34,25 @@ type Repository interface {
 }
 
 // New returns new DB instance.
-func New(ctx context.Context) *DB {
+func New(ctx context.Context) (*DB, error) {
 	log := logger.NewComponentLogger(ctx, pkgName)
 	pool, err := NewPool(ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to connect to DB")
+		return nil, fmt.Errorf("create db pool: %w", err)
 	}
 
-	return NewDB(pool, log)
+	return NewDB(pool, log), nil
+}
+
+// MustNew is New with fatal-on-error semantics for app main packages.
+func MustNew(ctx context.Context) *DB {
+	db, err := New(ctx)
+	if err != nil {
+		log := logger.NewComponentLogger(ctx, pkgName)
+		log.Fatal().Err(err).Msg("failed to connect to db")
+	}
+
+	return db
 }
 
 // NewDB returns new DB instance.
@@ -54,21 +66,27 @@ func NewDB(pool *pgxpool.Pool, log logger.Logger) *DB {
 }
 
 // Subscribe is
-func (db *DB) Subscribe(ctx context.Context, topicName string) (<-chan *[]byte, error) {
+func (db *DB) Subscribe(ctx context.Context, topicName string) (<-chan []byte, error) {
 	conn, err := db.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := conn.Exec(ctx, "listen "+pgx.Identifier{topicName}.Sanitize()); err != nil {
+	topic := pgx.Identifier{topicName}.Sanitize()
+	if _, err := conn.Exec(ctx, "listen "+topic); err != nil {
 		conn.Release()
 		return nil, err
 	}
 
-	out := make(chan *[]byte)
+	out := make(chan []byte)
 
 	go func() {
-		defer conn.Release()
+		defer func() {
+			if _, err := conn.Exec(context.Background(), "unlisten "+topic); err != nil {
+				db.Log.Error().Err(err).Str("topic", topicName).Msg("can't unlisten notification topic")
+			}
+			conn.Release()
+		}()
 		defer close(out)
 
 		for {
@@ -89,7 +107,11 @@ func (db *DB) Subscribe(ctx context.Context, topicName string) (<-chan *[]byte, 
 				}
 
 				payload := []byte(n.Payload)
-				out <- &payload
+				select {
+				case out <- payload:
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()

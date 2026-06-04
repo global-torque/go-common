@@ -14,7 +14,15 @@ func getQueue(t tests.TestContext) *pclient.Client {
 
 func SendPubSubEvent(topic string, body any, attr map[string]string) tests.SomeAction {
 	return func(t tests.TestContext) error {
-		_, err := getQueue(t).PublishToTopic(context.Background(), topic, body, attr)
+		ctx := t.Ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, fixtureOperationTimeout)
+		defer cancel()
+
+		_, err := getQueue(t).PublishToTopic(ctx, topic, body, attr)
 		return err
 	}
 }

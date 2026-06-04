@@ -31,6 +31,9 @@ func NewConfiguration(conf interface{}, prefixes ...string) error {
 
 		return err
 	}
+	if err := validateRequiredStrings(conf); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	gpubsub "cloud.google.com/go/pubsub"
+	gpubsub "cloud.google.com/go/pubsub/v2"
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/webdevelop-pro/go-common/context/keys"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -22,22 +25,24 @@ const (
 	SubscriptionRetryTimeout = 60 * time.Second
 )
 
-func verifyDeliveryAttempt(msg *gpubsub.Message) {
+func verifyDeliveryAttempt(msg *gpubsub.Message) bool {
 	// ToDo
 	// For some reason right now message does not goes in dead letter queue
 	// Fix dead letter queue settings in GCP
 	// For now we just ask message to stop working with it
 	if msg.DeliveryAttempt != nil && *msg.DeliveryAttempt > maxDeliveryAttempt {
 		msg.Ack()
-		return
+		return false
 	}
+
+	return true
 }
 
-func (b *Client) getSubscriptionRetry(ctx context.Context, subscription, topic string) (*gpubsub.Subscription, error) {
+func (b *Client) getSubscriptionRetry(ctx context.Context, subscription, topic string) (*gpubsub.Subscriber, error) {
 	expo := backoff.NewExponentialBackOff()
 	expo.MaxElapsedTime = SubscriptionRetryTimeout
 	sub, err := backoff.RetryWithData(
-		func() (*gpubsub.Subscription, error) {
+		func() (*gpubsub.Subscriber, error) {
 			b.log.Info().Msgf("Connecting to subscription %s/%s", topic, subscription)
 			return b.getSubscription(ctx, subscription, topic)
 		},
@@ -47,46 +52,39 @@ func (b *Client) getSubscriptionRetry(ctx context.Context, subscription, topic s
 		),
 	)
 	if err != nil {
-		b.log.Error().Stack().Err(err).Msgf(ErrNotConnected.Error())
+		b.log.Error().Stack().Err(err).Msg(ErrNotConnected.Error())
 		return nil, err
 	}
 	return sub, nil
 }
 
-func (b *Client) getSubscription(ctx context.Context, subscription, topic string) (*gpubsub.Subscription, error) {
-	var err error
+func (b *Client) getSubscription(ctx context.Context, subscription, topic string) (*gpubsub.Subscriber, error) {
 	if b.client == nil {
 		return nil, ErrNotConnected
 	}
 
-	bTopic := b.client.Topic(topic)
-
-	if bTopic == nil {
-		return nil, ErrTopicNotSet
-	}
-
-	ok, err := bTopic.Exists(ctx)
-	if !ok {
-		b.log.Error().Err(err).Str("topic", topic).Msgf(ErrTopicNotExists.Error())
-		return nil, fmt.Errorf("%w: %s", ErrTopicNotExists, bTopic.ID())
-	}
-
+	ok, err := b.TopicExist(ctx, topic)
 	if err != nil {
-		b.log.Error().Err(err).Str("topic", topic).Msgf(ErrTopicConnect.Error())
+		b.log.Error().Err(err).Str("topic", topic).Msg(ErrTopicConnect.Error())
 		return nil, fmt.Errorf("%w: %w", ErrTopicConnect, err)
 	}
+	if !ok {
+		b.log.Error().Err(err).Str("topic", topic).Msg(ErrTopicNotExists.Error())
+		return nil, fmt.Errorf("%w: %s", ErrTopicNotExists, topic)
+	}
 
-	sub := b.client.Subscription(subscription)
-	ok, err = sub.Exists(ctx)
+	_, err = b.client.SubscriptionAdminClient.GetSubscription(ctx, &pubsubpb.GetSubscriptionRequest{
+		Subscription: b.subscriptionPath(subscription),
+	})
 	if err != nil {
-		b.log.Error().Err(err).Str("subscription", subscription).Msgf(ErrConnectSubscription.Error())
+		if status.Code(err) == codes.NotFound {
+			b.log.Error().Err(err).Str("subscription", subscription).Msg(ErrSubscriptionNotExist.Error())
+			return nil, fmt.Errorf("%w: %w", ErrSubscriptionNotExist, err)
+		}
+		b.log.Error().Err(err).Str("subscription", subscription).Msg(ErrConnectSubscription.Error())
 		return nil, fmt.Errorf("%w: %w", ErrConnectSubscription, err)
 	}
-	if !ok {
-		b.log.Error().Err(err).Str("subscription", subscription).Msgf(ErrSubscriptionNotExist.Error())
-		return nil, fmt.Errorf("%w: %w", ErrSubscriptionNotExist, err)
-	}
-	return sub, nil
+	return b.client.Subscriber(subscription), nil
 }
 
 func (b *Client) ListenRawMsgs(
@@ -104,12 +102,14 @@ func (b *Client) ListenRawMsgs(
 func (b *Client) listenRawGoroutine(
 	ctx context.Context,
 	callback func(ctx context.Context, msg Message) error,
-	sub *gpubsub.Subscription,
+	sub *gpubsub.Subscriber,
 ) error {
 	// Start consuming messages from the subscription
 	b.log.Trace().Msgf("connected to subscription %s listen messages", sub.ID())
 	err := sub.Receive(ctx, func(ctx context.Context, msg *gpubsub.Message) {
-		verifyDeliveryAttempt(msg)
+		if !verifyDeliveryAttempt(msg) {
+			return
+		}
 
 		// Unmarshal the message data into a struct
 		m := Message{
@@ -124,14 +124,14 @@ func (b *Client) listenRawGoroutine(
 		b.log.Trace().Str("msg", string(m.Data)).Msgf("received message")
 		err := callback(ctx, m)
 		if err != nil {
-			b.log.Error().Err(err).Msgf(ErrReceiveCallback.Error())
+			b.log.Error().Err(err).Msg(ErrReceiveCallback.Error())
 			msg.Nack()
 			return
 		}
 		msg.Ack()
 	})
 	if err != nil {
-		b.log.Error().Stack().Err(err).Msgf(ErrReceiveSubscription.Error())
+		b.log.Error().Stack().Err(err).Msg(ErrReceiveSubscription.Error())
 	}
 	return err
 }
@@ -152,16 +152,18 @@ func (b *Client) ListenWebhooks(
 func (b *Client) listenWebhookGoroutine(
 	ctx context.Context,
 	callback func(ctx context.Context, msg Webhook) error,
-	sub *gpubsub.Subscription,
+	sub *gpubsub.Subscriber,
 ) error {
 	// Start consuming messages from the subscription
 	b.log.Trace().Msgf("connected to subscription %s listen for webhooks", sub.ID())
 	err := sub.Receive(ctx, func(ctx context.Context, msg *gpubsub.Message) {
-		verifyDeliveryAttempt(msg)
+		if !verifyDeliveryAttempt(msg) {
+			return
+		}
 
 		webhook := Webhook{}
 		if err := json.Unmarshal(msg.Data, &webhook); err != nil {
-			b.log.Error().Err(err).Interface("data", string(msg.Data)).Msgf(ErrUnmarshalPubSub.Error())
+			b.log.Error().Err(err).Interface("data", string(msg.Data)).Msg(ErrUnmarshalPubSub.Error())
 			msg.Nack()
 			return
 		}
@@ -172,14 +174,14 @@ func (b *Client) listenWebhookGoroutine(
 		b.log.Trace().Interface("msg", webhook).Msgf("received webhook")
 		err := callback(ctx, webhook)
 		if err != nil {
-			b.log.Error().Err(err).Msgf(ErrReceiveCallback.Error())
+			b.log.Error().Err(err).Msg(ErrReceiveCallback.Error())
 			msg.Nack()
 			return
 		}
 		msg.Ack()
 	})
 	if err != nil {
-		b.log.Error().Stack().Err(err).Msgf(ErrReceiveSubscription.Error())
+		b.log.Error().Stack().Err(err).Msg(ErrReceiveSubscription.Error())
 	}
 	return err
 }
@@ -200,16 +202,18 @@ func (b *Client) ListenEvents(
 func (b *Client) listenEventGoroutine(
 	ctx context.Context,
 	callback func(ctx context.Context, msg Event) error,
-	sub *gpubsub.Subscription,
+	sub *gpubsub.Subscriber,
 ) error {
 	// Start consuming messages from the subscription
 	b.log.Trace().Msgf("connected to subscription %s listen for events", sub.ID())
 	err := sub.Receive(ctx, func(ctx context.Context, msg *gpubsub.Message) {
-		verifyDeliveryAttempt(msg)
+		if !verifyDeliveryAttempt(msg) {
+			return
+		}
 
 		event := Event{}
 		if err := json.Unmarshal(msg.Data, &event); err != nil {
-			b.log.Error().Err(err).Interface("data", string(msg.Data)).Msgf(ErrUnmarshalPubSub.Error())
+			b.log.Error().Err(err).Interface("data", string(msg.Data)).Msg(ErrUnmarshalPubSub.Error())
 			msg.Nack()
 			return
 		}
@@ -221,14 +225,14 @@ func (b *Client) listenEventGoroutine(
 		b.log.Trace().Interface("msg", event).Msgf("received event")
 		err := callback(ctx, event)
 		if err != nil {
-			b.log.Error().Err(err).Msgf(ErrReceiveCallback.Error())
+			b.log.Error().Err(err).Msg(ErrReceiveCallback.Error())
 			msg.Nack()
 			return
 		}
 		msg.Ack()
 	})
 	if err != nil {
-		b.log.Error().Stack().Err(err).Msgf(ErrReceiveSubscription.Error())
+		b.log.Error().Stack().Err(err).Msg(ErrReceiveSubscription.Error())
 	}
 	return err
 }
