@@ -24,6 +24,7 @@ type Request struct {
 
 // CreateDefaultRequest default json request
 func CreateDefaultRequest(ctx context.Context, req Request) (*http.Request, error) {
+	req = defaultRequestHost(req)
 	if req.Port != "" {
 		req.Host = net.JoinHostPort(req.Host, req.Port)
 	}
@@ -63,6 +64,7 @@ func CreateRequestWithFiles(
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
 
+	req = defaultRequestHost(req)
 	if req.Port != "" {
 		req.Host = net.JoinHostPort(req.Host, req.Port)
 	}
@@ -144,6 +146,17 @@ func CreateRequestWithFiles(
 	res.Header.Set("Content-Length", strconv.FormatInt(res.ContentLength, 10))
 
 	return res, nil
+}
+
+func defaultRequestHost(req Request) Request {
+	if req.Host == "" {
+		req.Host = os.Getenv("HOST")
+		if req.Port == "" {
+			req.Port = os.Getenv("PORT")
+		}
+	}
+
+	return req
 }
 
 func request(httpClient *http.Client, req *http.Request) ([]byte, *http.Response, error) {

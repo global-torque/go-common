@@ -45,6 +45,7 @@ Load detailed guidance based on context:
 | Topic | Reference | Load When |
 |-------|-----------|-----------|
 | Architecture Patterns | `references/architecture-patterns.md` | Choosing monolith vs microservices |
+| Twelve-Factor App | `references/12factor/toc.md` | SaaS/service architecture, config, logs, disposability, build-release-run, backing services |
 | ADR Template | `references/adr-template.md` | Documenting decisions |
 | System Design | `references/system-design.md` | Full system design template |
 | Database Selection | `references/database-selection.md` | Choosing database technology |

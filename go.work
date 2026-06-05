@@ -9,6 +9,7 @@ use (
 	./logger
 	./logger/example
 	./misc
+	./orm
 	./queue
 	./response
 	./server

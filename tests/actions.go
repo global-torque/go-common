@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -36,7 +37,9 @@ func SendHTTPRequst(req httputils.Request, expected ExpectedResponse) SomeAction
 func SendHTTPRequest(req httputils.Request, expected ExpectedResponse) SomeAction {
 	return func(t TestContext) error {
 		newReq, err := httputils.CreateDefaultRequest(t.Ctx, req)
-		assert.NoError(t.T, err)
+		if !assert.NoError(t.T, err) {
+			return err
+		}
 
 		doRequest := httputils.SendRequest
 		if req.HttpClient != nil {
@@ -44,7 +47,12 @@ func SendHTTPRequest(req httputils.Request, expected ExpectedResponse) SomeActio
 		}
 
 		result, resp, err := doRequest(newReq)
-		assert.NoError(t.T, err)
+		if !assert.NoError(t.T, err) {
+			return err
+		}
+		if !assert.NotNil(t.T, resp, "missing HTTP response") {
+			return errors.New("missing HTTP response")
+		}
 
 		assert.Equal(t.T, expected.Code, resp.StatusCode, "Invalid response code")
 
@@ -74,7 +82,9 @@ func SendHTTPRequest(req httputils.Request, expected ExpectedResponse) SomeActio
 func SendHTTPRequestFiles(req httputils.Request, body map[string]any, files map[string]string, expected ExpectedResponse) SomeAction {
 	return func(t TestContext) error {
 		newReq, err := httputils.CreateRequestWithFiles(t.Ctx, req, body, files)
-		assert.NoError(t.T, err)
+		if !assert.NoError(t.T, err) {
+			return err
+		}
 
 		doRequest := httputils.SendRequest
 		if req.HttpClient != nil {
@@ -82,7 +92,12 @@ func SendHTTPRequestFiles(req httputils.Request, body map[string]any, files map[
 		}
 
 		result, resp, err := doRequest(newReq)
-		assert.NoError(t.T, err)
+		if !assert.NoError(t.T, err) {
+			return err
+		}
+		if !assert.NotNil(t.T, resp, "missing HTTP response") {
+			return errors.New("missing HTTP response")
+		}
 
 		assert.Equal(t.T, expected.Code, resp.StatusCode, "Invalid response code")
 

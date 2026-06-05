@@ -53,6 +53,17 @@ func NewFixturesManager(ctx context.Context, fixtures ...Fixture) FixturesManage
 	}
 }
 
+func (f FixturesManager) WithFixtures(fixtures ...Fixture) FixturesManager {
+	f.fixtures = fixtures
+	return f
+}
+
+func (f FixturesManager) Close() {
+	if f.db != nil {
+		f.db.Close()
+	}
+}
+
 func (f FixturesManager) ExecQuery(query string) error {
 	_, err := f.db.Exec(context.TODO(), query)
 	return err
