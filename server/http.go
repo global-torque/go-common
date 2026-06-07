@@ -80,9 +80,6 @@ func NewServer() (*HTTPServer, error) {
 	e := echo.New()
 	allowedOrigins := originAllowlist(cfg.CORSAllowedOrigins)
 	// sets CORS headers if Origin is present.
-	// Private Network Access (PNA) preflight is handled at the nginx layer:
-	// nginx adds `Access-Control-Allow-Private-Network: true` for any vhost
-	// on a *.webdevelop.internal / *.webdevelop.ll domain.
 	e.Use(
 		echoMW.CORSWithConfig(echoMW.CORSConfig{
 			Skipper: func(ctx echo.Context) bool {
