@@ -4,6 +4,8 @@ package pgtype
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"time"
 
 	pgxpgtype "github.com/jackc/pgx/v5/pgtype"
@@ -75,6 +77,36 @@ type Timestamptz struct {
 	Time             time.Time
 	Status           Status
 	InfinityModifier InfinityModifier
+}
+
+// Set converts and assigns src using the legacy pgtype Value method shape.
+func (t *Timestamptz) Set(src any) error {
+	if src == nil {
+		*t = Timestamptz{Status: Null}
+		return nil
+	}
+
+	switch value := src.(type) {
+	case time.Time:
+		*t = Timestamptz{Time: value, Status: Present}
+	case *time.Time:
+		if value == nil {
+			*t = Timestamptz{Status: Null}
+			return nil
+		}
+
+		return t.Set(*value)
+	case InfinityModifier:
+		*t = Timestamptz{InfinityModifier: value, Status: Present}
+	default:
+		if converted, ok := underlyingTime(src); ok {
+			return t.Set(converted)
+		}
+
+		return fmt.Errorf("cannot convert %v to Timestamptz", value)
+	}
+
+	return nil
 }
 
 // ScanTimestamptz implements pgx timestamptz scanning.
@@ -165,6 +197,87 @@ func (j JSON) MarshalJSON() ([]byte, error) {
 // JSONB represents PostgreSQL jsonb bytes with old pgtype Status semantics.
 type JSONB JSON
 
+// Set converts and assigns src using the legacy pgtype Value method shape.
+func (j *JSONB) Set(src any) error {
+	if src == nil {
+		*j = JSONB{Status: Null}
+		return nil
+	}
+
+	switch value := src.(type) {
+	case string:
+		*j = JSONB{Bytes: []byte(value), Status: Present}
+	case *string:
+		if value == nil {
+			*j = JSONB{Status: Null}
+			return nil
+		}
+
+		*j = JSONB{Bytes: []byte(*value), Status: Present}
+	case []byte:
+		if value == nil {
+			*j = JSONB{Status: Null}
+			return nil
+		}
+
+		*j = JSONB{Bytes: value, Status: Present}
+	case JSON:
+		return errors.New("use pointer to pgtype.JSON instead of value")
+	case JSONB:
+		return errors.New("use pointer to pgtype.JSONB instead of value")
+	default:
+		buf, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+
+		*j = JSONB{Bytes: buf, Status: Present}
+	}
+
+	return nil
+}
+
+// AssignTo converts and assigns the JSONB value to dst.
+func (j *JSONB) AssignTo(dst any) error {
+	switch value := dst.(type) {
+	case *string:
+		if j.Status != Present {
+			return fmt.Errorf("cannot assign non-present status to %T", dst)
+		}
+
+		*value = string(j.Bytes)
+	case **string:
+		if j.Status == Present {
+			str := string(j.Bytes)
+			*value = &str
+			return nil
+		}
+
+		*value = nil
+	case *[]byte:
+		if j.Status != Present {
+			*value = nil
+			return nil
+		}
+
+		buf := make([]byte, len(j.Bytes))
+		copy(buf, j.Bytes)
+		*value = buf
+	default:
+		data := j.Bytes
+		if data == nil || j.Status != Present {
+			data = []byte("null")
+		}
+
+		target := reflect.ValueOf(dst).Elem()
+		target.Set(reflect.Zero(target.Type()))
+
+		return json.Unmarshal(data, dst)
+	}
+
+	return nil
+}
+
 // ScanBytes implements pgx JSONB scanning.
 func (j *JSONB) ScanBytes(src []byte) error {
 	if src == nil {
@@ -221,4 +334,26 @@ func toPgxInfinity(value InfinityModifier) pgxpgtype.InfinityModifier {
 	default:
 		return pgxpgtype.Finite
 	}
+}
+
+func underlyingTime(value any) (time.Time, bool) {
+	refValue := reflect.ValueOf(value)
+	if !refValue.IsValid() {
+		return time.Time{}, false
+	}
+
+	if refValue.Kind() == reflect.Pointer {
+		if refValue.IsNil() {
+			return time.Time{}, false
+		}
+
+		return underlyingTime(refValue.Elem().Interface())
+	}
+
+	timeType := reflect.TypeOf(time.Time{})
+	if refValue.Type().ConvertibleTo(timeType) {
+		return refValue.Convert(timeType).Interface().(time.Time), true
+	}
+
+	return time.Time{}, false
 }

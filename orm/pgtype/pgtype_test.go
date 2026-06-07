@@ -61,6 +61,32 @@ func TestTimestamptzPgxInterfaces(t *testing.T) {
 	}
 }
 
+func TestTimestamptzSetCompatibility(t *testing.T) {
+	now := time.Date(2026, 6, 5, 12, 0, 0, 0, time.UTC)
+
+	var ts Timestamptz
+	if err := ts.Set(now); err != nil {
+		t.Fatalf("Set time returned error: %v", err)
+	}
+	if !ts.Time.Equal(now) || ts.Status != Present || ts.InfinityModifier != None {
+		t.Fatalf("unexpected timestamp: %#v", ts)
+	}
+
+	if err := ts.Set((*time.Time)(nil)); err != nil {
+		t.Fatalf("Set nil time pointer returned error: %v", err)
+	}
+	if ts.Status != Null {
+		t.Fatalf("expected null, got %#v", ts)
+	}
+
+	if err := ts.Set(Infinity); err != nil {
+		t.Fatalf("Set infinity returned error: %v", err)
+	}
+	if ts.Status != Present || ts.InfinityModifier != Infinity {
+		t.Fatalf("expected infinity, got %#v", ts)
+	}
+}
+
 func TestJSONPgxInterfaces(t *testing.T) {
 	var js JSON
 	if err := js.ScanBytes([]byte(`{"a":1}`)); err != nil {
@@ -93,6 +119,58 @@ func TestJSONBPgxInterfaces(t *testing.T) {
 	}
 	if js.Status != Present || !reflect.DeepEqual(js.Bytes, []byte(`{"a":1}`)) {
 		t.Fatalf("unexpected jsonb: %#v", js)
+	}
+}
+
+func TestJSONBSetAssignToCompatibility(t *testing.T) {
+	payload := []map[string]any{{
+		"type": "functions-on-contract",
+		"data": map[string]any{
+			"address":   "0xdddddddddddddddddddddddddddddddddddddddd",
+			"functions": []string{"0x0357371d"},
+		},
+	}}
+
+	var js JSONB
+	if err := js.Set(payload); err != nil {
+		t.Fatalf("Set returned error: %v", err)
+	}
+	if js.Status != Present || !json.Valid(js.Bytes) {
+		t.Fatalf("unexpected jsonb: %#v", js)
+	}
+
+	var got []map[string]any
+	if err := js.AssignTo(&got); err != nil {
+		t.Fatalf("AssignTo returned error: %v", err)
+	}
+	if len(got) != 1 || got[0]["type"] != "functions-on-contract" {
+		t.Fatalf("unexpected assigned payload: %#v", got)
+	}
+
+	var raw []byte
+	if err := js.AssignTo(&raw); err != nil {
+		t.Fatalf("AssignTo bytes returned error: %v", err)
+	}
+	if !reflect.DeepEqual(raw, js.Bytes) {
+		t.Fatalf("unexpected raw payload: got %s want %s", raw, js.Bytes)
+	}
+}
+
+func TestJSONBSetNullCompatibility(t *testing.T) {
+	var js JSONB
+	if err := js.Set(nil); err != nil {
+		t.Fatalf("Set nil returned error: %v", err)
+	}
+	if js.Status != Null {
+		t.Fatalf("expected null, got %#v", js)
+	}
+
+	var payload map[string]any
+	if err := js.AssignTo(&payload); err != nil {
+		t.Fatalf("AssignTo null returned error: %v", err)
+	}
+	if payload != nil {
+		t.Fatalf("expected nil payload, got %#v", payload)
 	}
 }
 
