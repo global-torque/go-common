@@ -17,7 +17,7 @@ LABEL REPOSITORY=$REPOSITORY
 ENV GOPATH=/go
 ENV VERSION=${VERSION:-unknown}
 
-RUN apk add --no-cache make gcc musl-dev linux-headers git gettext ca-certificates binutils
+RUN apk add --no-cache make gcc musl-dev linux-headers git gettext ca-certificates binutils binutils-gold
 
 WORKDIR /app
 
