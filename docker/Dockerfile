@@ -30,6 +30,7 @@ COPY httputils/go.mod httputils/go.sum ./httputils/
 COPY logger/go.mod logger/go.sum ./logger/
 COPY logger/example/go.mod logger/example/go.sum ./logger/example/
 COPY misc/go.mod misc/go.sum ./misc/
+COPY orm/go.mod orm/go.sum ./orm/
 COPY queue/go.mod queue/go.sum ./queue/
 COPY response/go.mod response/go.sum ./response/
 COPY server/go.mod server/go.sum ./server/
@@ -45,6 +46,7 @@ COPY docker/main.go ./docker/main.go
 COPY httputils ./httputils
 COPY logger ./logger
 COPY misc ./misc
+COPY orm ./orm
 COPY queue ./queue
 COPY response ./response
 COPY server ./server
