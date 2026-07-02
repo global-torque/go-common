@@ -1,6 +1,6 @@
 ---
 name: go-common
-description: Shared Webdevelop Pro Go library guidance. Use when working in Go services that import github.com/webdevelop-pro/go-common packages for env configuration, structured logging, Echo/Fx HTTP servers and routes, response.Error handling, validation, pgx database access, Google Pub/Sub queue clients/listeners/push handlers, HTTP/test helpers, context keys, version metadata, rounding helpers, or the go-common Docker base image.
+description: Mandatory shared Webdevelop Pro Go library guidance. Use whenever a Go service imports github.com/webdevelop-pro/go-common/*, especially for response.Error, HTTP error serialization, Echo error handlers, validator.New/Verify, request DTO validation tags, server.ErrorResponse helpers, logging, config, db, queue, tests, and the go-common Docker base image. Before creating any custom error type, validation helper, HTTP response mapper, provider error wrapper, service plumbing, or test helper in a dependent service, inspect and reuse go-common packages.
 ---
 
 # Go Common
@@ -9,6 +9,13 @@ Use this skill to reuse `github.com/webdevelop-pro/go-common/*` packages instead
 of reimplementing service plumbing. This repo is a multi-module library: import
 packages by their module path, for example `github.com/webdevelop-pro/go-common/db`,
 not a root `go-common` module.
+
+In dependent services, always check this skill before adding custom error,
+validation, HTTP server/handler, logging, config, db, queue, or test-helper
+infrastructure. Provider-specific adapters may classify external errors, but
+they should expose user-facing failures through `*response.Error` and leave
+unexpected/internal failures as plain or wrapped errors for the application
+boundary to map.
 
 When changing this library, run tests from the affected module directory because
 each top-level package has its own `go.mod`.
