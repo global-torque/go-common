@@ -47,9 +47,9 @@ build() {
 
 self_update() {
   [ ! -d "etc/" ] && mkdir etc;
-  docker pull cr.webdevelop.us/webdevelop-pro/go-common:latest-dev;
+  docker pull cr.webdevelop.us/global-torque/go-common:latest-dev;
   docker rm -f makesh;
-  docker run --name=makesh cr.webdevelop.us/webdevelop-pro/go-common:latest-dev sh &&
+  docker run --name=makesh cr.webdevelop.us/global-torque/go-common:latest-dev sh &&
   # docker cp makesh:/app/etc/make.sh make.sh;
   docker cp makesh:/app/etc/golangci.yml .golangci.yml;
   docker cp makesh:/app/etc/air.toml .air.toml

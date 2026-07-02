@@ -8,7 +8,7 @@ import (
 	valid "github.com/go-playground/validator/v10"
 	pkgerrors "github.com/pkg/errors"
 
-	"github.com/webdevelop-pro/go-common/response"
+	"github.com/global-torque/go-common/response"
 )
 
 const (

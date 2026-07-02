@@ -18,7 +18,7 @@ for DIR in $MODULE_DIRS; do
   pushd "$DIR"
   echo "Updating dependencies for module: $DIR"
 
-  grep -E 'github.com/webdevelop-pro/go-common/.* v' go.mod | while read -r line; do
+  grep -E 'github.com/global-torque/go-common/.* v' go.mod | while read -r line; do
     DEP=$(echo $line | awk '{print $1}')
     echo "Updating dependency: $DEP to version $TAG_VERSION"
     go get "$DEP@$TAG_VERSION"

@@ -1,4 +1,4 @@
-module github.com/webdevelop-pro/go-common/context
+module github.com/global-torque/go-common/context
 
 go 1.24
 

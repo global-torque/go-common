@@ -9,7 +9,7 @@ import (
 	gpubsub "cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	backoff "github.com/cenkalti/backoff/v4"
-	"github.com/webdevelop-pro/go-common/context/keys"
+	"github.com/global-torque/go-common/context/keys"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

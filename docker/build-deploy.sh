@@ -1,4 +1,4 @@
-COMPANY_NAME=webdevelop-pro
+COMPANY_NAME=global-torque
 SERVICE_NAME=go-common
 
 case $1 in

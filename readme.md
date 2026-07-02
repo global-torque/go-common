@@ -7,7 +7,7 @@ Pre-build docker image for go 1.23.0
 
 ## Installation
 
-1. Set up credentials for cr.webdevelop.pro and docker.io/webdevelop-pro
+1. Set up credentials for cr.webdevelop.pro and docker.io/global-torque
 2. Set up credentials for [snyk](https://snyk.io/) to verify image security vulnerabilities
 
 ## Deploy
@@ -23,7 +23,7 @@ Pre-build docker image for go 1.23.0
 
 ## Usage example
 ```Dockerfile
-FROM cr.webdevelop.us/webdevelop-pro/go-common:latest-dev AS builder
+FROM cr.webdevelop.us/global-torque/go-common:latest-dev AS builder
 
 # RUN apk add --no-cache make gcc musl-dev linux-headers git gettext - no longer needed
 # fast build cause of pre-build requirements

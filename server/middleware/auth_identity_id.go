@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/global-torque/go-common/context/keys"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
-	"github.com/webdevelop-pro/go-common/context/keys"
 
-	"github.com/webdevelop-pro/go-common/logger"
+	"github.com/global-torque/go-common/logger"
 )
 
 type AuthIdentityHeaderMiddleware struct {

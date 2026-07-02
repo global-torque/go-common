@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
+	"github.com/global-torque/go-common/validator"
 	"github.com/pkg/errors"
-	"github.com/webdevelop-pro/go-common/validator"
 )
 
 func (b *Client) PublishEvent(

@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/global-torque/go-common/logger"
 	"github.com/labstack/echo/v4"
-	"github.com/webdevelop-pro/go-common/logger"
 )
 
 const componentName = "pubsubpush"

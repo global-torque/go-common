@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/webdevelop-pro/go-common/configurator"
-	"github.com/webdevelop-pro/go-common/queue/pclient"
+	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/queue/pclient"
 )
 
 type contextKey string

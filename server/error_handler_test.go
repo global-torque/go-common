@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/global-torque/go-common/response"
+	"github.com/global-torque/go-common/validator"
 	"github.com/labstack/echo/v4"
-	"github.com/webdevelop-pro/go-common/response"
-	"github.com/webdevelop-pro/go-common/validator"
 )
 
 type User struct {

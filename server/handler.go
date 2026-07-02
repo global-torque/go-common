@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/webdevelop-pro/go-common/server/route"
+	"github.com/global-torque/go-common/server/route"
 	"go.uber.org/fx"
 )
 

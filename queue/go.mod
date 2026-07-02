@@ -1,21 +1,21 @@
-module github.com/webdevelop-pro/go-common/queue
+module github.com/global-torque/go-common/queue
 
 go 1.25.8
 
 require (
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/global-torque/go-common/configurator v1.0.20
+	github.com/global-torque/go-common/context v1.0.18
+	github.com/global-torque/go-common/httputils v1.0.20
+	github.com/global-torque/go-common/logger v1.0.21
+	github.com/global-torque/go-common/tests v1.0.23
+	github.com/global-torque/go-common/validator v1.0.22
+	github.com/global-torque/go-common/verser v1.0.19
 	github.com/labstack/echo/v4 v4.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.11.1
-	github.com/webdevelop-pro/go-common/configurator v1.0.20
-	github.com/webdevelop-pro/go-common/context v1.0.18
-	github.com/webdevelop-pro/go-common/httputils v1.0.20
-	github.com/webdevelop-pro/go-common/logger v1.0.21
-	github.com/webdevelop-pro/go-common/tests v1.0.23
-	github.com/webdevelop-pro/go-common/validator v1.0.22
-	github.com/webdevelop-pro/go-common/verser v1.0.19
 	google.golang.org/api v0.283.0
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
@@ -31,6 +31,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/global-torque/go-common/response v1.0.19 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -50,7 +51,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	github.com/webdevelop-pro/go-common/response v1.0.19 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0 // indirect
@@ -70,3 +70,19 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/global-torque/go-common/configurator => ../configurator
+
+replace github.com/global-torque/go-common/context => ../context
+
+replace github.com/global-torque/go-common/httputils => ../httputils
+
+replace github.com/global-torque/go-common/logger => ../logger
+
+replace github.com/global-torque/go-common/tests => ../tests
+
+replace github.com/global-torque/go-common/validator => ../validator
+
+replace github.com/global-torque/go-common/verser => ../verser
+
+replace github.com/global-torque/go-common/response => ../response

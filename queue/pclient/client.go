@@ -8,8 +8,8 @@ import (
 
 	gpubsub "cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
-	"github.com/webdevelop-pro/go-common/configurator"
-	"github.com/webdevelop-pro/go-common/logger"
+	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/logger"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

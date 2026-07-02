@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/tests"
 	"github.com/stretchr/testify/assert"
-	"github.com/webdevelop-pro/go-common/context/keys"
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/tests"
 )
 
 type stdOut struct {

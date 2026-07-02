@@ -10,21 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/global-torque/go-common/context/keys"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	echoMW "github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"github.com/webdevelop-pro/go-common/context/keys"
 	"go.uber.org/fx"
 
-	"github.com/webdevelop-pro/go-common/validator"
+	"github.com/global-torque/go-common/validator"
 
-	"github.com/webdevelop-pro/go-common/configurator"
-	"github.com/webdevelop-pro/go-common/logger"
+	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/logger"
 
-	"github.com/webdevelop-pro/go-common/server/healthcheck"
-	"github.com/webdevelop-pro/go-common/server/middleware"
-	"github.com/webdevelop-pro/go-common/server/route"
+	"github.com/global-torque/go-common/server/healthcheck"
+	"github.com/global-torque/go-common/server/middleware"
+	"github.com/global-torque/go-common/server/route"
 )
 
 const pkgName = "http_server"

@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/webdevelop-pro/go-common/httputils"
-	"github.com/webdevelop-pro/go-common/queue/pclient"
-	"github.com/webdevelop-pro/go-common/queue/pubsubpush"
-	"github.com/webdevelop-pro/go-common/tests"
+	"github.com/global-torque/go-common/httputils"
+	"github.com/global-torque/go-common/queue/pclient"
+	"github.com/global-torque/go-common/queue/pubsubpush"
+	"github.com/global-torque/go-common/tests"
 )
 
 // SendPushWebhook emulates a Pub/Sub push delivery of a Webhook to the service

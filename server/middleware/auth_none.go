@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 
+	"github.com/global-torque/go-common/logger"
 	"github.com/labstack/echo/v4"
-	"github.com/webdevelop-pro/go-common/logger"
 )
 
 type AuthNoneMiddleware struct {

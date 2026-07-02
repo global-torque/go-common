@@ -1,4 +1,4 @@
-module github.com/webdevelop-pro/go-common/response
+module github.com/global-torque/go-common/response
 
 go 1.24
 

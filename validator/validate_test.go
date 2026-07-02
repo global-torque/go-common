@@ -3,8 +3,8 @@ package validator
 import (
 	"testing"
 
+	"github.com/global-torque/go-common/response"
 	"github.com/stretchr/testify/assert"
-	"github.com/webdevelop-pro/go-common/response"
 )
 
 func TestValidator(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/webdevelop-pro/go-common/configurator"
-	"github.com/webdevelop-pro/go-common/logger"
+	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/logger"
 )
 
 // NewConn is constructor for *pgx.Conn

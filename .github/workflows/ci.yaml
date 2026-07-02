@@ -105,6 +105,6 @@ jobs:
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: |
-            cr.webdevelop.pro/webdevelop-pro/go-common:latest
-            cr.webdevelop.pro/webdevelop-pro/go-common:latest-dev
-            cr.webdevelop.pro/webdevelop-pro/go-common:${{ steps.short-sha.outputs.sha }}
+            cr.webdevelop.pro/global-torque/go-common:latest
+            cr.webdevelop.pro/global-torque/go-common:latest-dev
+            cr.webdevelop.pro/global-torque/go-common:${{ steps.short-sha.outputs.sha }}

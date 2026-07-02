@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/global-torque/go-common/db"
+	"github.com/global-torque/go-common/tests"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/webdevelop-pro/go-common/db"
-	"github.com/webdevelop-pro/go-common/tests"
 )
 
 const (

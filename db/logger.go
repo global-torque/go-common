@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/global-torque/go-common/logger"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/tracelog"
-	"github.com/webdevelop-pro/go-common/logger"
 )
 
 // Logger is a struct that represent logger for DB

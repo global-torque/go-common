@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/webdevelop-pro/go-common/context/keys"
-	"github.com/webdevelop-pro/go-common/validator"
 )
 
 func TestIPAddress(t *testing.T) {

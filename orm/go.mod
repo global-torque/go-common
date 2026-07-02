@@ -1,4 +1,4 @@
-module github.com/webdevelop-pro/go-common/orm
+module github.com/global-torque/go-common/orm
 
 go 1.25.0
 

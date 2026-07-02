@@ -1,12 +1,12 @@
-module github.com/webdevelop-pro/go-common/validator
+module github.com/global-torque/go-common/validator
 
 go 1.25.0
 
 require (
+	github.com/global-torque/go-common/response v1.0.19
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
-	github.com/webdevelop-pro/go-common/response v1.0.19
 )
 
 require (
@@ -25,4 +25,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/webdevelop-pro/go-common/response => ../response
+replace github.com/global-torque/go-common/response => ../response

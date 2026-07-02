@@ -1,122 +1,73 @@
-# Golang logging enhancements
+# logger
 
+Import path: `github.com/global-torque/go-common/logger`
 
-This project adds enhancements to improve logging in go services. Service based on the [zerolog](https://github.com/rs/zerolog) and [pkg/errors](https://github.com/pkg/errors) with additional improvements:
+Zerolog wrapper for service logs with component names, severity mapping,
+optional caller fields, stack traces through `pkg/errors`, and request/service
+context hooks.
 
-- add stack trace for the error, panic and fatal errors
-- add request context to every logging instance
-- hook for seemless integration with [google cloud error reporting](https://cloud.google.com/error-reporting)
+## Use For
 
-## Usage
+- Structured JSON logs in Go services.
+- Component-scoped loggers.
+- Adding request ID, message ID, service/version, repository, and HTTP request
+  data to logs.
+- Stack traces on wrapped errors.
+
+## Do Not Use For
+
+- Echo native logging output. The server package disables Echo logger output.
+- Plain `fmt.Println` debugging in service code.
+
+## Key APIs
+
+- `Logger`
+- `NewLogger(ctx, component, logLevel, output)`
+- `NewComponentLogger(ctx, component)`
+- `NewComponentLoggerE(ctx, component)`
+- `NewDefaultLogger()`
+- `NewDefaultLoggerE()`
+- `DefaultStdoutLogger(ctx, logLevel)`
+- `FromCtx(ctx, component)`
+- `ServiceContext`
+- `SourceReference`
+- `HTTPRequestContext`
+
+## Configuration
+
+- `LOG_LEVEL`: parsed by zerolog; invalid or empty values fall back to `info`.
+- `LOG_CONSOLE`: when true, writes console output for local development.
+
+## Wiring Pattern
 
 ```go
-package main
+log := logger.NewComponentLogger(ctx, "payments")
+log.Info().Str("payment_id", id).Msg("payment started")
 
-import (
-  "net/http"
-
-  "github.com/pkg/errors"
-  "github.com/labstack/echo/v4"
-  "github.com/webdevelop-pro/go-common/logger"
-)
-
-func errorFunc() error {
-  return errors.New("some error")
-}
-
-func main() {
-  e := echo.New()
-  defaultLogger := logger.NewComponentLogger("main", nil) // logger without context
-  e.GET("/", func(c echo.Context) error {
-    err := errorFunc()
-    log := logger.NewComponentLogger("get-func", e) // logger with get request context
-    log.Error().Ctx(ctx).Stack().Err(err).Msg("error while getting element with id 123")
-    return c.String(http.StatusOK, "Hello, World!")
-  })
-  defaultLogger.Fatal.Err(e.Start(":1323")).Msg("server went down")
+if err != nil {
+	log.Error().Stack().Err(err).Msg("payment failed")
 }
 ```
 
-Will output
-```json
-{
-  "level": "error",
-  "component": "get-func",
-  "stack": [
-    {
-      "func": "errorFunc",
-      "line": "12",
-      "source": "main.go"
-    },
-    {
-      "func": "main.func1",
-      "line": "19",
-      "source": "main.go"
-    },
-    {
-      "func": "(*Echo).add.func1",
-      "line": "575",
-      "source": "echo.go"
-    },
-    {
-      "func": "(*Echo).ServeHTTP",
-      "line": "662",
-      "source": "echo.go"
-    },
-    {
-      "func": "serverHandler.ServeHTTP",
-      "line": "2936",
-      "source": "server.go"
-    },
-    {
-      "func": "(*conn).serve",
-      "line": "1995",
-      "source": "server.go"
-    },
-    {
-      "func": "goexit",
-      "line": "1172",
-      "source": "asm_arm64.s"
-    }
-  ],
-  "error": "user id: 123 not found in user_users",
-  "severity": "ERROR",
-  "serviceContext": {
-    "service": "hello-world",
-    "version": "1.2.3-git-sha256",
-    "user": "123123",
-    "httpRequest": {
-      "method": "GET",
-      "url": "/",
-      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
-      "referrer": "",
-      "responseStatusCode": 200,
-      "remoteIp": "127.0.0.1:62312"
-    }
-  },
-  "@type": "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",
-  "time": "2023-03-20T18:08:42+01:00",
-  "message": "row not found"
-}
+To enrich logs with service context, place `logger.ServiceContext` under
+`keys.LogInfo`:
+
+```go
+ctx = keys.SetCtxValue(ctx, keys.LogInfo, logger.ServiceContext{
+	Service: "api",
+	Version: "v1",
+})
 ```
 
-## Guidelines
-- Always log your error twice: right when it happen with stacktrace (`.Stack()`) and in ports handler (http/pubsub/websocket/etc)
+## Testing
 
-#### Notes
-Key error elements:
-- `level` and `severity`: error level
-- `message`: generic error message, i.e. row now found
-- `err`: detail error message, i.e. element 123 not found in database
-- `component`: name of the component
-- `serviceContext`: service information, including user id and request info
+The logger module tests compare stdout JSON with
+`github.com/global-torque/go-common/tests.CompareJSONBody`.
 
+## Gotchas
 
-### Config
-
-- `LOG_LEVEL` define log level, required
-- `LOG_CONSOLE` add terminal colors, useful for local development. Default false
-    
-## Contributing
-[TBD]
-
+- Caller fields are enabled only for debug and trace levels.
+- `Logger.Ctx(ctx)` returns `zerolog.Ctx(ctx)`. For service context hooks, pass
+  context into events with `.Ctx(ctx)` or create the logger with context.
+- Use `.Stack()` only with errors that carry stack information, such as errors
+  wrapped by `github.com/pkg/errors`.

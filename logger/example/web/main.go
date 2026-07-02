@@ -5,10 +5,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/verser"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/verser"
 )
 
 var ErrNotFound = errors.New("row not found")

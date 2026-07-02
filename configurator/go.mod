@@ -1,4 +1,4 @@
-module github.com/webdevelop-pro/go-common/configurator
+module github.com/global-torque/go-common/configurator
 
 go 1.24
 

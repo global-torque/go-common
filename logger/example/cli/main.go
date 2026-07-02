@@ -4,9 +4,9 @@ package main
 import (
 	"context"
 
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/verser"
 	"github.com/pkg/errors"
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/verser"
 )
 
 var ErrNotFound = errors.New("row not found")

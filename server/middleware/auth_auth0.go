@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
-	"github.com/webdevelop-pro/go-common/configurator"
-	"github.com/webdevelop-pro/go-common/logger"
 )
 
 type AuthMiddleware interface {

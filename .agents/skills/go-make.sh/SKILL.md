@@ -179,7 +179,7 @@ when the flag is set.
   Migration-style repos can also override deploy behavior:
 
   ```sh
-  COMPANY_NAME=webdevelop-pro
+  COMPANY_NAME=global-torque
   DEPLOY_TAG_PROD=latest-master
   SYSTEMD_UNIT_PROD=prod-wd-migration-job.service
   SYSTEMD_SERVICE_MODE_PROD=oneshot
@@ -206,7 +206,7 @@ implementation differs.
   three tags from one image (`:latest-<env>`, the git-sha, and on master
   also `:latest-internal` for the auth-bypass container), and restarts
   both `wd-notification-api` *and* `wd-notification-internal` units.
-  See [the repo's deploy.yml](https://github.com/webdevelop-pro/i-notification-worker/blob/master/.github/workflows/deploy.yml).
+  See [the repo's deploy.yml](https://github.com/global-torque/i-notification-worker/blob/master/.github/workflows/deploy.yml).
 
 ## Syncing a new repo
 

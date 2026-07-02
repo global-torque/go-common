@@ -1,25 +1,88 @@
-# Configuration
-Read data from disk using ENV_FILE env variable.
-This operation is `slow`, use it during process start to load envs from file
+# configurator
 
-```golang
-  var cfg Config
-  err := configurator.NewConfiguration(&cfg, "")
-	if err != nil {
-		panic(err)
-	}
+Import path: `github.com/global-torque/go-common/configurator`
+
+Loads startup configuration structs from environment variables with
+`github.com/kelseyhightower/envconfig`. It also supports `.env` files through
+`github.com/joho/godotenv`.
+
+## Use For
+
+- Parsing service config during startup.
+- Loading `.env` automatically when present.
+- Loading a custom dotenv file through `ENV_FILE`.
+- Reusing parsed config instances through `Configurator`.
+- Required string env values that must reject blank or whitespace-only input.
+
+## Do Not Use For
+
+- Hot-path config reads or dynamic reloads.
+- Long-running refresh loops. `NewConfiguration` may read dotenv files.
+- Secret management beyond env loading.
+
+## Key APIs
+
+- `NewConfiguration(conf, prefixes...) error`
+- `Parse[T](prefixes ...string) (T, error)`
+- `LoadDotEnv() error`
+- `NewConfigurator(configs ...Configuration) *Configurator`
+- `(*Configurator).Get`, `MustGet`, `New`, `MustNew`, `Print`, `MustPrint`
+- `RequiredString`
+
+## Configuration
+
+Use normal `envconfig` struct tags:
+
+```go
+type Config struct {
+	Host     string `required:"false" default:"localhost" split_words:"true"`
+	Port     uint16 `default:"5432" split_words:"true"`
+	User     string `required:"true" split_words:"true"`
+	Password string `required:"true" split_words:"true"`
+}
 ```
 
-# Configurator
-Read data from the configuration, do not try to read ENV_FILE
-Use this method in running process to provide envs for services
+`LoadDotEnv` reads `ENV_FILE` when set. If `ENV_FILE` is empty and `.env`
+exists in the current directory, it loads `.env`.
 
-```golang
-	conf := configurator.NewConfigurator()
-	cfg := conf.New("logger", &Config{}).(*Config)
+## Wiring Pattern
+
+For one-off startup config:
+
+```go
+cfg, err := configurator.Parse[Config]("DB")
+if err != nil {
+	return err
+}
 ```
 
+For shared config:
 
-# ToDo
-- [ ] create a singleton so we can read file from disk once and use cached data after
-- [ ] find out a way not to use github.com/jinzhu/copier. Do we really need [this code?](./configurator.go#78)
+```go
+conf := configurator.NewConfigurator()
+cfg, err := conf.New("logger", &LoggerConfig{}, "log")
+if err != nil {
+	return err
+}
+```
+
+Use `RequiredString` when empty strings are not allowed:
+
+```go
+type PubSubConfig struct {
+	Topic configurator.RequiredString `split_words:"true"`
+}
+```
+
+## Testing
+
+Use `t.Setenv("ENV_FILE", "")` to avoid loading a real dotenv file, or set
+`ENV_FILE=.env.tests` when tests should load fixture env values.
+
+## Gotchas
+
+- `MustGet`, `MustNew`, and `MustPrint` panic. Keep them in application startup
+  code, not reusable libraries.
+- `Configurator.Get` copies cached configs with `copier` and ignores empty
+  values.
+- `RequiredString` is required by type; do not add redundant `required:"true"`.

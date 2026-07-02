@@ -1,6 +1,6 @@
 # Data Validation With go-common/validator
 
-Use `github.com/webdevelop-pro/go-common/validator` for request DTOs and boundary data. It wraps `github.com/go-playground/validator/v10` and returns this repo's `response.Error` shape, so callers get field-keyed JSON errors instead of raw validator messages.
+Use `github.com/global-torque/go-common/validator` for request DTOs and boundary data. It wraps `github.com/go-playground/validator/v10` and returns this repo's `response.Error` shape, so callers get field-keyed JSON errors instead of raw validator messages.
 
 ## Local Wrapper
 

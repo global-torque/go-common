@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/response"
 	"github.com/labstack/echo/v4"
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/response"
 )
 
 func ErrorResponse(e echo.Context, err error) error {

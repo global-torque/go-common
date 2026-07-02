@@ -26,12 +26,6 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
-github.com/webdevelop-pro/go-common/configurator v1.0.20 h1:gAfNo+J4GJQ8FMgbsHc0CqGcEyGYzYDbbW1xpw/FUGE=
-github.com/webdevelop-pro/go-common/configurator v1.0.20/go.mod h1:tDxp75WFnRWt/+O5C5vdjdrfB0BTa+b8xoKoIEn7zEc=
-github.com/webdevelop-pro/go-common/context v1.0.18 h1:7GsQNzeZqWc2EpBSsQ5y5N80pEHRkVc/89HvMigx24I=
-github.com/webdevelop-pro/go-common/context v1.0.18/go.mod h1:Y3D3efyT0RLONogflV0btLcAZaKSJ6gc4u2j6oMllww=
-github.com/webdevelop-pro/go-common/verser v1.0.19 h1:yupG/DCMqdFgArHLwb3PR6eMw6YMFJvCND/HiJxrvJM=
-github.com/webdevelop-pro/go-common/verser v1.0.19/go.mod h1:rtmZz+xsdFolAGqZrjjxjuYyyfTceurxNWrW5LvT9oo=
 golang.org/x/crypto v0.52.0 h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=
 golang.org/x/crypto v0.52.0/go.mod h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc=
 golang.org/x/net v0.55.0 h1:bcvxaJn3e1U6InsFWt1JUq1aSjnRxLzT2rtD2KfkDF8=

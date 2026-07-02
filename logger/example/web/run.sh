@@ -1,6 +1,6 @@
 #!/bin/sh
 
-REPOSITORY="github.com/webdevelop-pro/user-api"
+REPOSITORY="github.com/global-torque/user-api"
 GIT_COMMIT="a14625319b802c417e6b89645cd676596c497adc"
 VERSION="1.2.3"
 SERVICE_NAME="user-api"

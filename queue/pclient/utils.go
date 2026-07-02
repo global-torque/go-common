@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/httputils"
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/verser"
 	"github.com/rs/zerolog"
-	"github.com/webdevelop-pro/go-common/context/keys"
-	"github.com/webdevelop-pro/go-common/httputils"
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/verser"
 )
 
 func SetDefaultEventCtx(ctx context.Context, event Event) context.Context {

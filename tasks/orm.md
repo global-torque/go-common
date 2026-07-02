@@ -2,7 +2,7 @@
 
 ## Summary
 
-Create a new standalone module `github.com/webdevelop-pro/go-common/orm` to own the lightweight ORM/query-helper layer currently in `../i-models/models`. Keep `go-common/db` focused on pgx setup. Keep Pub/Sub logging, notifications, history logs, and domain-specific `Save` side effects out of `orm`.
+Create a new standalone module `github.com/global-torque/go-common/orm` to own the lightweight ORM/query-helper layer currently in `../i-models/models`. Keep `go-common/db` focused on pgx setup. Keep Pub/Sub logging, notifications, history logs, and domain-specific `Save` side effects out of `orm`.
 
 ## Key Changes
 
@@ -112,7 +112,7 @@ func (c *ChangeSet) ResetChanges()
 
 ## Implementation Status - 2026-06-05
 
-- Added `github.com/webdevelop-pro/go-common/orm` with CRUD helpers, `Save`,
+- Added `github.com/global-torque/go-common/orm` with CRUD helpers, `Save`,
   `ChangeSet`, `WithTx`, and `orm/pgtype`; added `./orm` to `go.work`.
 - Updated `../i-models/models` into a compatibility wrapper around `orm` for
   generic CRUD and `DefaultFields`.
@@ -120,7 +120,7 @@ func (c *ChangeSet) ResetChanges()
   the migration sentinel `ErrRecordNotFound`, and removed Pub/Sub log helpers
   from `i-models/models`.
 - Deleted the old `../i-models/pgtype` package and moved model/service imports
-  to `github.com/webdevelop-pro/go-common/orm/pgtype`.
+  to `github.com/global-torque/go-common/orm/pgtype`.
 - Moved active Pub/Sub log persistence into the owning payment/esign services.
 - Updated `../i-payment-api`, `../i-escrow-api`, `../i-kyc-api`, and
   `../i-esign-api` for the new ORM/pgtype module and `RetrieveOne` spelling.

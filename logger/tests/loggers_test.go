@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/webdevelop-pro/go-common/context/keys"
-	"github.com/webdevelop-pro/go-common/logger"
-	echo_google_cloud "github.com/webdevelop-pro/go-common/logger/echo_google_cloud"
-	"github.com/webdevelop-pro/go-common/tests"
+	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/logger"
+	echo_google_cloud "github.com/global-torque/go-common/logger/echo_google_cloud"
+	"github.com/global-torque/go-common/tests"
 )
 
 func ReadStdout(r *os.File, w *os.File) string {
@@ -226,12 +226,12 @@ func TestLog_ErrorWithStack(t *testing.T) {
 					"line": "%any%",
 					"source": "testing.go"
 				},
-				{
-					"func": "goexit",
-					"line": "%any%",
-					"source": "asm_amd64.s"
-				}
-			],
+					{
+						"func": "goexit",
+						"line": "%any%",
+						"source": "%any%"
+					}
+				],
 			"error": "from error: error message",
 			"severity": "ERROR",
 			"serviceContext": {

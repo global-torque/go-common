@@ -3,9 +3,9 @@ package middleware
 import (
 	"context"
 
+	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/httputils"
 	"github.com/labstack/echo/v4"
-	"github.com/webdevelop-pro/go-common/context/keys"
-	"github.com/webdevelop-pro/go-common/httputils"
 )
 
 func SetIPAddress(next echo.HandlerFunc) echo.HandlerFunc {

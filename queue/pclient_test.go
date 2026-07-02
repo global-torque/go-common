@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/webdevelop-pro/go-common/configurator"
-	pclient "github.com/webdevelop-pro/go-common/queue/pclient"
+	"github.com/global-torque/go-common/configurator"
+	pclient "github.com/global-torque/go-common/queue/pclient"
 )
 
 const (

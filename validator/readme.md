@@ -1,34 +1,74 @@
-# Response component
+# validator
 
-## Idea
-This is a wrapper around go-playground [validator](https://github.com/go-playground/validator) library.
-What changes we providing:
-- Simplify error structures to return `{field: [err1, err2]}` and simplify error parcing
-- Short and simple error messages to increase error readability for end users
+Import path: `github.com/global-torque/go-common/validator`
 
-## Usage
+Wrapper around `github.com/go-playground/validator/v10` that returns
+`*response.Error` with compact field-keyed messages.
 
-- Bind echo framework with validator, `err` is a `response.Error` 
+## Use For
+
+- Echo request DTO validation.
+- App-level precondition validation that should return a chosen HTTP status.
+- Shared validation messages for common tags.
+
+## Do Not Use For
+
+- Raw validator errors when callers need full `validator.ValidationErrors`
+  details.
+- Complex nested response shaping; this package currently flattens by field.
+
+## Key APIs
+
+- `New() *Validator`
+- `Validator.Validate(i) error`
+- `Validator.Verify(i, httpStatus) error`
+- `ParamName`
+- custom `path` tag
+
+## Validation Tags
+
+Uses `validate` struct tags. Supported custom messages include:
+
+- `required`
+- `email`
+- `len`
+- `min`
+- `max`
+- `gt`
+- `gte`
+- `oneof`
+- `eq`
+- `ssn`
+- `dirpath`
+- `path`
+
+Field names come from `json`, then `param`, then `form` tags.
+
+## Wiring Pattern
+
+With Echo:
+
 ```go
-import "github.com/webdevelop-pro/go-common/validator"
-
-// get an instance of a validator
 e.Validator = validator.New()
-err := c.Validate(&requestData)
+if err := c.Validate(&req); err != nil {
+	return server.ErrorResponse(c, err)
+}
 ```
 
-- Or just used it directly in our code:
+Direct use:
+
 ```go
-validate := validator.New()
-if err := validate.Validate(dto.ProfileForStripe(profile.Data), http.StatusPreconditionFailed); err != nil {
+if err := validator.New().Verify(dto, http.StatusPreconditionFailed); err != nil {
 	return err
 }
 ```
-In this example, we are using custom dto structure with requirements for the stripe profile. And in case of the error we creating `response.Error` object with `PreconditionFailed` status
 
+## Testing
 
-## ToDo
-- [ ] add object references in json response. I.e. `{"profile": {"name": ["msg"]}}` instead of `{"name": ["msg"]}`
-- [ ] add empty tag similar to required
-- [ ] create tag to validate file size
-- [ ] create tag to validate file mimetype
+Cast returned errors to `*response.Error` and compare `Message.Map()`.
+
+## Gotchas
+
+- `Validate` always returns HTTP 400 on validation failure.
+- `Verify` lets callers choose the status code.
+- `New` panics if custom validation registration fails.

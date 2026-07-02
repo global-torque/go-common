@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/webdevelop-pro/go-common/logger"
-	"github.com/webdevelop-pro/go-common/queue/pclient"
+	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/queue/pclient"
 )
 
 const (

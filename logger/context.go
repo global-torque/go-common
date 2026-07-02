@@ -1,8 +1,8 @@
 package logger
 
 import (
+	"github.com/global-torque/go-common/context/keys"
 	"github.com/rs/zerolog"
-	"github.com/webdevelop-pro/go-common/context/keys"
 )
 
 type ContextHook struct{}

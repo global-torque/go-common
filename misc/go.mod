@@ -1,4 +1,4 @@
-module github.com/webdevelop-pro/go-common/misc
+module github.com/global-torque/go-common/misc
 
 go 1.24
 

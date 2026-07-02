@@ -1,37 +1,64 @@
-# Go lang common image
+# docker
 
-Pre-build docker image for go 1.24
-- Improve docker build up for 10x times
-- Make sure base image is secure with snyk vulnerability scanner
-- Universal make.sh file to help have similar pipelines on different go based repos
+Module path: `github.com/global-torque/go-common/docker`
 
-## Installation
+Build seed for the shared go-common Docker image. This directory is not a
+reusable go-common library package.
 
-1. Set up credentials for cr.webdevelop.pro and docker.io/webdevelop-pro
-2. Set up credentials for [snyk](https://snyk.io/) to verify image security vulnerabilities
+## Use For
 
-## Deploy
-1. build and deploy using `./build-deploy.sh` script
+- Building `cr.webdevelop.pro/global-torque/go-common` images.
+- Pre-downloading heavy Go dependencies into a shared builder image.
+- Shipping common `etc` files such as `make.sh`, `golangci.yml`, `air.toml`,
+  and `pre-commit`.
 
-## Structure
-- build all heavy dependencies (gcc, fx.uber, modern-go/concurrent, modern-go/reflect2)
-- `etc/golangci.yml` - actuall rules for golang linter
-- `etc/make.sh` - bash utility with usefull commands
-- `etc/pre-commit` - git pre-commit rules
-- `etc/air.toml` - autorestart service on changes
+## Do Not Use For
 
+- Service package imports.
+- Application runtime logic.
 
-## Usage example
+## Key Files
+
+- `docker/Dockerfile`
+- `docker/main.go`
+- `docker/build-deploy.sh`
+- `docker/etc/make.sh`
+- `docker/etc/golangci.yml`
+- `docker/etc/air.toml`
+- `docker/etc/pre-commit`
+
+## Build Configuration
+
+Docker build args:
+
+- `GIT_COMMIT`
+- `BUILD_DATE`
+- `SERVICE_NAME`
+- `REPOSITORY`
+- `VERSION`
+- `GOLANGCI_LINT_VERSION`
+- `GOSEC_VERSION`
+- `GCI_VERSION`
+
+The image currently uses Go `1.25.8` on Alpine and installs `golangci-lint`,
+`gosec`, and `gci`.
+
+## Wiring Pattern
+
+Dependent service Dockerfiles can use the published image as a builder:
+
 ```Dockerfile
-FROM cr.webdevelop.us/webdevelop-pro/go-common:latest-dev AS builder
-
-# RUN apk add --no-cache make gcc musl-dev linux-headers git gettext - no longer needed
-# fast build cause of pre-build requirements
-RUN ./make.sh build 
+FROM cr.webdevelop.us/global-torque/go-common:latest-dev AS builder
+RUN ./make.sh build
 ```
 
-# ToDo
-- [ ] `./make.sh coverage` to generate badger for test coverage
-- [ ] `./make.sh run-debug-dev` add ability to run in debug mode
+## CI
 
+Root GitHub Actions run vet/tests with PostgreSQL and Pub/Sub emulator services,
+then build and push the Docker image.
 
+## Gotchas
+
+- `docker/go.mod` module path is currently `github.com/global-torque/go-common/docker`.
+- `docker/main.go` blank-imports common dependencies to warm the image cache.
+- This module is a build artifact, not a public package API.
