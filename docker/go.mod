@@ -4,16 +4,16 @@ go 1.25.8
 
 require (
 	github.com/ethereum/go-ethereum v1.17.3
-	github.com/global-torque/go-common/configurator/v2 v2.0.0
-	github.com/global-torque/go-common/context/v2 v2.0.0
-	github.com/global-torque/go-common/db/v2 v2.0.0
-	github.com/global-torque/go-common/httputils/v2 v2.0.0
-	github.com/global-torque/go-common/logger/v2 v2.0.0
-	github.com/global-torque/go-common/queue/v2 v2.0.0
-	github.com/global-torque/go-common/response/v2 v2.0.0
-	github.com/global-torque/go-common/tests/v2 v2.0.0
-	github.com/global-torque/go-common/validator/v2 v2.0.0
-	github.com/global-torque/go-common/verser/v2 v2.0.0
+	github.com/global-torque/go-common/configurator/v2 v2.0.1
+	github.com/global-torque/go-common/context/v2 v2.0.1
+	github.com/global-torque/go-common/db/v2 v2.0.1
+	github.com/global-torque/go-common/httputils/v2 v2.0.1
+	github.com/global-torque/go-common/logger/v2 v2.0.1
+	github.com/global-torque/go-common/queue/v2 v2.0.1
+	github.com/global-torque/go-common/response/v2 v2.0.1
+	github.com/global-torque/go-common/tests/v2 v2.0.1
+	github.com/global-torque/go-common/validator/v2 v2.0.1
+	github.com/global-torque/go-common/verser/v2 v2.0.1
 	github.com/labstack/echo/v4 v4.15.2
 	go.uber.org/fx v1.24.0
 )
