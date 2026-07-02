@@ -1,6 +1,6 @@
 # server
 
-Import path: `github.com/global-torque/go-common/server`
+Import path: `github.com/global-torque/go-common/server/v2`
 
 Echo HTTP server wired for Uber Fx lifecycle with shared middleware, validation,
 healthcheck, metrics, and response error serialization.
@@ -72,8 +72,8 @@ if err := c.Validate(&req); err != nil {
 ## Testing
 
 Use direct Echo handler tests for small handlers or
-`github.com/global-torque/go-common/tests.SendHTTPRequest` for integration
-tests.
+`tests.SendHTTPRequest` from `github.com/global-torque/go-common/tests/v2`
+for integration tests.
 
 ## Gotchas
 

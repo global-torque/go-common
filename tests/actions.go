@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/global-torque/go-common/httputils"
+	"github.com/global-torque/go-common/httputils/v2"
 )
 
 type TestContext struct {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/response"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/response/v2"
 	"github.com/labstack/echo/v4"
 )
 

@@ -1,6 +1,6 @@
 # server/middleware
 
-Import path: `github.com/global-torque/go-common/server/middleware`
+Import path: `github.com/global-torque/go-common/server/v2/middleware`
 
 Shared Echo middleware for auth, request metadata, logger context, JWT payloads,
 and request/response body dumping.

@@ -1,6 +1,6 @@
 # db/dbtests
 
-Import path: `github.com/global-torque/go-common/db/dbtests`
+Import path: `github.com/global-torque/go-common/db/v2/dbtests`
 
 PostgreSQL fixture and SQL assertion helpers for integration tests.
 

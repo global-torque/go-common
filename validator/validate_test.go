@@ -3,7 +3,7 @@ package validator
 import (
 	"testing"
 
-	"github.com/global-torque/go-common/response"
+	"github.com/global-torque/go-common/response/v2"
 	"github.com/stretchr/testify/assert"
 )
 

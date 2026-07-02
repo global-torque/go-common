@@ -1,6 +1,6 @@
 # misc/round
 
-Import path: `github.com/global-torque/go-common/misc/round`
+Import path: `github.com/global-torque/go-common/misc/v2/round`
 
 Rounds float values to integer-like values while preserving a required total,
 using a largest-remainder strategy with special handling for equal values.

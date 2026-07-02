@@ -1,6 +1,6 @@
 # tests
 
-Import path: `github.com/global-torque/go-common/tests`
+Import path: `github.com/global-torque/go-common/tests/v2`
 
 Integration-test helpers for table scenarios, HTTP actions, fixture managers,
 and JSON body comparison.

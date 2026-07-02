@@ -1,6 +1,6 @@
 # validator
 
-Import path: `github.com/global-torque/go-common/validator`
+Import path: `github.com/global-torque/go-common/validator/v2`
 
 Wrapper around `github.com/go-playground/validator/v10` that returns
 `*response.Error` with compact field-keyed messages.

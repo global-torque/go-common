@@ -1,11 +1,11 @@
-module github.com/global-torque/go-common/logger
+module github.com/global-torque/go-common/logger/v2
 
 go 1.25.0
 
 require (
-	github.com/global-torque/go-common/configurator v1.0.20
-	github.com/global-torque/go-common/context v1.0.18
-	github.com/global-torque/go-common/tests v1.0.23
+	github.com/global-torque/go-common/configurator/v2 v2.0.0
+	github.com/global-torque/go-common/context/v2 v2.0.0
+	github.com/global-torque/go-common/tests/v2 v2.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.35.1
 	go.uber.org/fx v1.24.0
@@ -13,7 +13,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/global-torque/go-common/httputils v1.0.20 // indirect
+	github.com/global-torque/go-common/httputils/v2 v2.0.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
@@ -26,11 +26,3 @@ require (
 	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/global-torque/go-common/configurator => ../configurator
-
-replace github.com/global-torque/go-common/context => ../context
-
-replace github.com/global-torque/go-common/tests => ../tests
-
-replace github.com/global-torque/go-common/httputils => ../httputils

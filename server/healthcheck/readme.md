@@ -1,6 +1,6 @@
 # server/healthcheck
 
-Import path: `github.com/global-torque/go-common/server/healthcheck`
+Import path: `github.com/global-torque/go-common/server/v2/healthcheck`
 
 Minimal Echo healthcheck handler.
 

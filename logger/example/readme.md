@@ -1,13 +1,13 @@
 # logger/example
 
-Module path: `github.com/global-torque/go-common/logger/example`
+Module path: `github.com/global-torque/go-common/logger/example/v2`
 
 Executable examples for the logger package.
 
 ## Packages
 
-- `github.com/global-torque/go-common/logger/example/cli`
-- `github.com/global-torque/go-common/logger/example/web`
+- `github.com/global-torque/go-common/logger/example/v2/cli`
+- `github.com/global-torque/go-common/logger/example/v2/web`
 
 ## Use For
 

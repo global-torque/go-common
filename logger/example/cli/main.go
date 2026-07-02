@@ -4,8 +4,8 @@ package main
 import (
 	"context"
 
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/verser"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/verser/v2"
 	"github.com/pkg/errors"
 )
 

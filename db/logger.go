@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/tracelog"
 )

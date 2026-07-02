@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/context/v2/keys"
 	"github.com/labstack/echo/v4"
 )
 

@@ -1,4 +1,4 @@
-module github.com/global-torque/go-common/context
+module github.com/global-torque/go-common/context/v2
 
 go 1.24
 

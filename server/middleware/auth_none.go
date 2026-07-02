@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 
-	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/labstack/echo/v4"
 )
 

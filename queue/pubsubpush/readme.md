@@ -1,6 +1,6 @@
 # queue/pubsubpush
 
-Import path: `github.com/global-torque/go-common/queue/pubsubpush`
+Import path: `github.com/global-torque/go-common/queue/v2/pubsubpush`
 
 DTOs and Echo middleware for Google Pub/Sub push subscription HTTP requests.
 

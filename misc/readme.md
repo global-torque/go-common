@@ -1,13 +1,13 @@
 # misc
 
-Module path: `github.com/global-torque/go-common/misc`
+Module path: `github.com/global-torque/go-common/misc/v2`
 
 Container module for small helpers that do not belong to a larger framework
 component.
 
 ## Packages
 
-- `github.com/global-torque/go-common/misc/round`: largest-remainder rounding
+- `github.com/global-torque/go-common/misc/v2/round`: largest-remainder rounding
   that mutates values so their rounded sum matches a required total.
 
 ## Use For

@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/global-torque/go-common/context/keys"
-	"github.com/global-torque/go-common/logger"
-	echo_google_cloud "github.com/global-torque/go-common/logger/echo_google_cloud"
-	"github.com/global-torque/go-common/tests"
+	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/logger/v2"
+	echo_google_cloud "github.com/global-torque/go-common/logger/v2/echo_google_cloud"
+	"github.com/global-torque/go-common/tests/v2"
 )
 
 func ReadStdout(r *os.File, w *os.File) string {

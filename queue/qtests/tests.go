@@ -3,8 +3,8 @@ package qtests
 import (
 	"context"
 
-	"github.com/global-torque/go-common/queue/pclient"
-	"github.com/global-torque/go-common/tests"
+	"github.com/global-torque/go-common/queue/v2/pclient"
+	"github.com/global-torque/go-common/tests/v2"
 )
 
 func getQueue(t tests.TestContext) *pclient.Client {

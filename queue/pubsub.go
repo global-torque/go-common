@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/queue/pclient"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/queue/v2/pclient"
 )
 
 const (

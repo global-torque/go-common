@@ -1,6 +1,6 @@
 # logger/example/web
 
-Import path: `github.com/global-torque/go-common/logger/example/web`
+Import path: `github.com/global-torque/go-common/logger/example/v2/web`
 
 Executable Echo web example for the logger package.
 

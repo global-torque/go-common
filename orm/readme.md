@@ -1,6 +1,6 @@
 # orm
 
-Import path: `github.com/global-torque/go-common/orm`
+Import path: `github.com/global-torque/go-common/orm/v2`
 
 Lightweight PostgreSQL helpers built on pgx and Squirrel. This is not a full
 ORM; it provides explicit CRUD helpers, a pure `Save` helper, transaction

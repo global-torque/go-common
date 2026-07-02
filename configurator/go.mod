@@ -1,4 +1,4 @@
-module github.com/global-torque/go-common/configurator
+module github.com/global-torque/go-common/configurator/v2
 
 go 1.24
 

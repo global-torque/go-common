@@ -1,6 +1,6 @@
 # verser
 
-Import path: `github.com/global-torque/go-common/verser`
+Import path: `github.com/global-torque/go-common/verser/v2`
 
 Process-global service metadata used by logging and server middleware.
 

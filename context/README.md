@@ -1,6 +1,6 @@
 # context/keys
 
-Import path: `github.com/global-torque/go-common/context/keys`
+Import path: `github.com/global-torque/go-common/context/v2/keys`
 
 Defines shared context keys and HTTP header names used by the server, logger,
 database, queue, and HTTP utility packages.

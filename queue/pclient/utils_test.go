@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/context/v2/keys"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/global-torque/go-common/context/keys"
+	"github.com/global-torque/go-common/context/v2/keys"
 )
 
 func GetIPAddress(headers http.Header) string {

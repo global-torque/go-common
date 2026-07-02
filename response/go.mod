@@ -1,4 +1,4 @@
-module github.com/global-torque/go-common/response
+module github.com/global-torque/go-common/response/v2
 
 go 1.24
 

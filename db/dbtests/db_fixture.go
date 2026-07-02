@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/global-torque/go-common/configurator"
-	"github.com/global-torque/go-common/db"
+	"github.com/global-torque/go-common/configurator/v2"
+	"github.com/global-torque/go-common/db/v2"
 )
 
 type contextKey string

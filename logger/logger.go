@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 
-	"github.com/global-torque/go-common/configurator"
+	"github.com/global-torque/go-common/configurator/v2"
 )
 
 func init() {

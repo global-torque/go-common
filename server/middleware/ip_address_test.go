@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/global-torque/go-common/context/keys"
-	"github.com/global-torque/go-common/validator"
+	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/validator/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )

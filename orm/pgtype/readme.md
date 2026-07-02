@@ -1,6 +1,6 @@
 # orm/pgtype
 
-Import path: `github.com/global-torque/go-common/orm/pgtype`
+Import path: `github.com/global-torque/go-common/orm/v2/pgtype`
 
 Compatibility wrappers for legacy nullable pgtype-style values on top of pgx
 v5 codecs.

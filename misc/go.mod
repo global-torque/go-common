@@ -1,4 +1,4 @@
-module github.com/global-torque/go-common/misc
+module github.com/global-torque/go-common/misc/v2
 
 go 1.24
 

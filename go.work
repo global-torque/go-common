@@ -17,3 +17,33 @@ use (
 	./validator
 	./verser
 )
+
+replace github.com/global-torque/go-common/configurator/v2 v2.0.0 => ./configurator
+
+replace github.com/global-torque/go-common/context/v2 v2.0.0 => ./context
+
+replace github.com/global-torque/go-common/db/v2 v2.0.0 => ./db
+
+replace github.com/global-torque/go-common/docker/v2 v2.0.0 => ./docker
+
+replace github.com/global-torque/go-common/httputils/v2 v2.0.0 => ./httputils
+
+replace github.com/global-torque/go-common/logger/v2 v2.0.0 => ./logger
+
+replace github.com/global-torque/go-common/logger/example/v2 v2.0.0 => ./logger/example
+
+replace github.com/global-torque/go-common/misc/v2 v2.0.0 => ./misc
+
+replace github.com/global-torque/go-common/orm/v2 v2.0.0 => ./orm
+
+replace github.com/global-torque/go-common/queue/v2 v2.0.0 => ./queue
+
+replace github.com/global-torque/go-common/response/v2 v2.0.0 => ./response
+
+replace github.com/global-torque/go-common/server/v2 v2.0.0 => ./server
+
+replace github.com/global-torque/go-common/tests/v2 v2.0.0 => ./tests
+
+replace github.com/global-torque/go-common/validator/v2 v2.0.0 => ./validator
+
+replace github.com/global-torque/go-common/verser/v2 v2.0.0 => ./verser

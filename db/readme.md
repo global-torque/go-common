@@ -1,6 +1,6 @@
 # db
 
-Import path: `github.com/global-torque/go-common/db`
+Import path: `github.com/global-torque/go-common/db/v2`
 
 PostgreSQL setup around `pgx/v5`: connection pools, direct connections,
 configuration validation, query logging, UTC session time zone, and PostgreSQL
@@ -17,7 +17,7 @@ notifications.
 
 - MySQL, SQLite, or other storage engines. `Config.Type` validates only
   `postgres`.
-- ORM-style CRUD. Use `github.com/global-torque/go-common/orm` for lightweight
+- ORM-style CRUD. Use `github.com/global-torque/go-common/orm/v2` for lightweight
   Squirrel helpers.
 
 ## Key APIs
@@ -73,7 +73,7 @@ err = database.QueryRow(ctx, "select name from users where id=$1", id).Scan(&nam
 
 ## Testing
 
-Use `github.com/global-torque/go-common/db/dbtests` for fixture setup and SQL
+Use `github.com/global-torque/go-common/db/v2/dbtests` for fixture setup and SQL
 assertions in integration tests.
 
 ## Gotchas

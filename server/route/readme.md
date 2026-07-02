@@ -1,6 +1,6 @@
 # server/route
 
-Import path: `github.com/global-torque/go-common/server/route`
+Import path: `github.com/global-torque/go-common/server/v2/route`
 
 Route declaration contract consumed by the shared server module.
 

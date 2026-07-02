@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 
-	"github.com/global-torque/go-common/context/keys"
-	"github.com/global-torque/go-common/httputils"
+	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/httputils/v2"
 	"github.com/labstack/echo/v4"
 )
 

@@ -1,6 +1,6 @@
 # logger/echo_google_cloud
 
-Import path: `github.com/global-torque/go-common/logger/echo_google_cloud`
+Import path: `github.com/global-torque/go-common/logger/v2/echo_google_cloud`
 
 Logger variant that adds the Google Cloud Error Reporting event type to error,
 fatal, and panic logs.

@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/fx/fxevent"
 
-	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/logger/v2"
 )
 
 type ZeroLogger struct {

@@ -1,6 +1,6 @@
 # configurator
 
-Import path: `github.com/global-torque/go-common/configurator`
+Import path: `github.com/global-torque/go-common/configurator/v2`
 
 Loads startup configuration structs from environment variables with
 `github.com/kelseyhightower/envconfig`. It also supports `.env` files through

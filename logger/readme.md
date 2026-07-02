@@ -1,6 +1,6 @@
 # logger
 
-Import path: `github.com/global-torque/go-common/logger`
+Import path: `github.com/global-torque/go-common/logger/v2`
 
 Zerolog wrapper for service logs with component names, severity mapping,
 optional caller fields, stack traces through `pkg/errors`, and request/service
@@ -61,8 +61,8 @@ ctx = keys.SetCtxValue(ctx, keys.LogInfo, logger.ServiceContext{
 
 ## Testing
 
-The logger module tests compare stdout JSON with
-`github.com/global-torque/go-common/tests.CompareJSONBody`.
+The logger module tests compare stdout JSON with `tests.CompareJSONBody` from
+`github.com/global-torque/go-common/tests/v2`.
 
 ## Gotchas
 

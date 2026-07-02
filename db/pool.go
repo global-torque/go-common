@@ -12,8 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 
-	"github.com/global-torque/go-common/configurator"
-	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/configurator/v2"
+	"github.com/global-torque/go-common/logger/v2"
 )
 
 // NewPool is constructor for pgxpool.Pool

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/global-torque/go-common/response"
-	"github.com/global-torque/go-common/validator"
+	"github.com/global-torque/go-common/response/v2"
+	"github.com/global-torque/go-common/validator/v2"
 	"github.com/labstack/echo/v4"
 )
 

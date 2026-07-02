@@ -1,19 +1,19 @@
-module github.com/global-torque/go-common/docker
+module github.com/global-torque/go-common/docker/v2
 
 go 1.25.8
 
 require (
 	github.com/ethereum/go-ethereum v1.17.3
-	github.com/global-torque/go-common/configurator v1.0.20
-	github.com/global-torque/go-common/context v1.0.18
-	github.com/global-torque/go-common/db v1.0.34
-	github.com/global-torque/go-common/httputils v1.0.20
-	github.com/global-torque/go-common/logger v1.0.21
-	github.com/global-torque/go-common/queue v1.0.34
-	github.com/global-torque/go-common/response v1.0.19
-	github.com/global-torque/go-common/tests v1.0.23
-	github.com/global-torque/go-common/validator v1.0.22
-	github.com/global-torque/go-common/verser v1.0.19
+	github.com/global-torque/go-common/configurator/v2 v2.0.0
+	github.com/global-torque/go-common/context/v2 v2.0.0
+	github.com/global-torque/go-common/db/v2 v2.0.0
+	github.com/global-torque/go-common/httputils/v2 v2.0.0
+	github.com/global-torque/go-common/logger/v2 v2.0.0
+	github.com/global-torque/go-common/queue/v2 v2.0.0
+	github.com/global-torque/go-common/response/v2 v2.0.0
+	github.com/global-torque/go-common/tests/v2 v2.0.0
+	github.com/global-torque/go-common/validator/v2 v2.0.0
+	github.com/global-torque/go-common/verser/v2 v2.0.0
 	github.com/labstack/echo/v4 v4.15.2
 	go.uber.org/fx v1.24.0
 )
@@ -92,23 +92,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/global-torque/go-common/configurator => ../configurator
-
-replace github.com/global-torque/go-common/context => ../context
-
-replace github.com/global-torque/go-common/db => ../db
-
-replace github.com/global-torque/go-common/httputils => ../httputils
-
-replace github.com/global-torque/go-common/logger => ../logger
-
-replace github.com/global-torque/go-common/queue => ../queue
-
-replace github.com/global-torque/go-common/response => ../response
-
-replace github.com/global-torque/go-common/tests => ../tests
-
-replace github.com/global-torque/go-common/validator => ../validator
-
-replace github.com/global-torque/go-common/verser => ../verser

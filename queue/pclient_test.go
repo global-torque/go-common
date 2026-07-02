@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/global-torque/go-common/configurator"
-	pclient "github.com/global-torque/go-common/queue/pclient"
+	"github.com/global-torque/go-common/configurator/v2"
+	pclient "github.com/global-torque/go-common/queue/v2/pclient"
 )
 
 const (

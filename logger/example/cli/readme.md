@@ -1,6 +1,6 @@
 # logger/example/cli
 
-Import path: `github.com/global-torque/go-common/logger/example/cli`
+Import path: `github.com/global-torque/go-common/logger/example/v2/cli`
 
 Executable CLI example for the logger package.
 

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/global-torque/go-common/configurator"
-	"github.com/global-torque/go-common/queue/pclient"
-	gTests "github.com/global-torque/go-common/tests"
+	"github.com/global-torque/go-common/configurator/v2"
+	"github.com/global-torque/go-common/queue/v2/pclient"
+	gTests "github.com/global-torque/go-common/tests/v2"
 )
 
 const pubsubDialTimeout = 500 * time.Millisecond

@@ -1,6 +1,6 @@
 # response
 
-Import path: `github.com/global-torque/go-common/response`
+Import path: `github.com/global-torque/go-common/response/v2`
 
 Shared application error type and message helpers for consistent client-facing
 errors across HTTP, CLI, worker, and app layers.

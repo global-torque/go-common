@@ -8,44 +8,44 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 - There is no single root Go module. Discover modules with `find . -name go.mod -not -path './.git/*' | sort`.
 - `go.work` includes all local modules for development. Run Go commands from the affected module directory, or use root `./make.sh test`, `./make.sh vet`, and `./make.sh lint` to loop modules.
-- Import by each module path, for example `github.com/global-torque/go-common/db`, not a root `go-common` package.
+- Import by each module path, for example `github.com/global-torque/go-common/db/v2`, not a root `go-common` package.
 - Many modules depend on published sibling versions in `go.mod`; when editing across modules, check `go.work` and local replaces before assuming dependency behavior.
 
 ## Package Map
 
-- `github.com/global-torque/go-common/configurator`: env and `.env` loading through `envconfig`.
-- `github.com/global-torque/go-common/context/keys`: shared typed context keys and header names.
-- `github.com/global-torque/go-common/db`: pgx connection/pool setup, DB logging, PostgreSQL `LISTEN`.
-- `github.com/global-torque/go-common/db/dbtests`: PostgreSQL fixture manager and SQL table-test actions.
-- `github.com/global-torque/go-common/httputils`: HTTP request builders, multipart requests, response sending, forwarded IP extraction.
-- `github.com/global-torque/go-common/logger`: zerolog wrapper with severity and service-context hooks.
-- `github.com/global-torque/go-common/logger/echo_google_cloud`: logger variant for Google Cloud Error Reporting fields.
-- `github.com/global-torque/go-common/logger/example/cli`: executable logger example, not a library package.
-- `github.com/global-torque/go-common/logger/example/web`: executable Echo logger example, not a library package.
-- `github.com/global-torque/go-common/logger/fxzerolog`: Uber Fx event logger adapter.
-- `github.com/global-torque/go-common/logger/tests`: logger module tests, not a stable helper package.
-- `github.com/global-torque/go-common/misc/round`: largest-remainder rounding helper.
-- `github.com/global-torque/go-common/orm`: lightweight pgx/Squirrel CRUD, save, transaction, and change tracking helpers.
-- `github.com/global-torque/go-common/orm/pgtype`: pgx v5 compatible legacy nullable `pgtype` wrappers.
-- `github.com/global-torque/go-common/queue`: Pub/Sub pull listener router with optional deduplication.
-- `github.com/global-torque/go-common/queue/pclient`: Google Pub/Sub v2 client, DTOs, publish/listen helpers.
-- `github.com/global-torque/go-common/queue/pubsubpush`: Pub/Sub push envelope DTOs and Echo max-attempt middleware.
-- `github.com/global-torque/go-common/queue/qtests`: Pub/Sub integration-test fixtures and push/publish actions.
-- `github.com/global-torque/go-common/response`: shared application error type and HTTP message helpers.
-- `github.com/global-torque/go-common/server`: Echo HTTP server wired for Fx, default middleware, and common error responses.
-- `github.com/global-torque/go-common/server/healthcheck`: `/healthcheck` handler.
-- `github.com/global-torque/go-common/server/middleware`: auth, JWT, request context, logging, IP, body dump middleware.
-- `github.com/global-torque/go-common/server/route`: route registration contract for handler groups.
-- `github.com/global-torque/go-common/tests`: table-test runner, HTTP test actions, JSON comparison helpers.
-- `github.com/global-torque/go-common/validator`: `go-playground/validator` wrapper returning `*response.Error`.
-- `github.com/global-torque/go-common/verser`: process-global service/version/repository/revision metadata.
-- `docker` module (`github.com/global-torque/go-common/docker`): build image seed, not a reusable library import.
+- `github.com/global-torque/go-common/configurator/v2`: env and `.env` loading through `envconfig`.
+- `github.com/global-torque/go-common/context/v2/keys`: shared typed context keys and header names.
+- `github.com/global-torque/go-common/db/v2`: pgx connection/pool setup, DB logging, PostgreSQL `LISTEN`.
+- `github.com/global-torque/go-common/db/v2/dbtests`: PostgreSQL fixture manager and SQL table-test actions.
+- `github.com/global-torque/go-common/httputils/v2`: HTTP request builders, multipart requests, response sending, forwarded IP extraction.
+- `github.com/global-torque/go-common/logger/v2`: zerolog wrapper with severity and service-context hooks.
+- `github.com/global-torque/go-common/logger/v2/echo_google_cloud`: logger variant for Google Cloud Error Reporting fields.
+- `github.com/global-torque/go-common/logger/example/v2/cli`: executable logger example, not a library package.
+- `github.com/global-torque/go-common/logger/example/v2/web`: executable Echo logger example, not a library package.
+- `github.com/global-torque/go-common/logger/v2/fxzerolog`: Uber Fx event logger adapter.
+- `github.com/global-torque/go-common/logger/v2/tests`: logger module tests, not a stable helper package.
+- `github.com/global-torque/go-common/misc/v2/round`: largest-remainder rounding helper.
+- `github.com/global-torque/go-common/orm/v2`: lightweight pgx/Squirrel CRUD, save, transaction, and change tracking helpers.
+- `github.com/global-torque/go-common/orm/v2/pgtype`: pgx v5 compatible legacy nullable `pgtype` wrappers.
+- `github.com/global-torque/go-common/queue/v2`: Pub/Sub pull listener router with optional deduplication.
+- `github.com/global-torque/go-common/queue/v2/pclient`: Google Pub/Sub v2 client, DTOs, publish/listen helpers.
+- `github.com/global-torque/go-common/queue/v2/pubsubpush`: Pub/Sub push envelope DTOs and Echo max-attempt middleware.
+- `github.com/global-torque/go-common/queue/v2/qtests`: Pub/Sub integration-test fixtures and push/publish actions.
+- `github.com/global-torque/go-common/response/v2`: shared application error type and HTTP message helpers.
+- `github.com/global-torque/go-common/server/v2`: Echo HTTP server wired for Fx, default middleware, and common error responses.
+- `github.com/global-torque/go-common/server/v2/healthcheck`: `/healthcheck` handler.
+- `github.com/global-torque/go-common/server/v2/middleware`: auth, JWT, request context, logging, IP, body dump middleware.
+- `github.com/global-torque/go-common/server/v2/route`: route registration contract for handler groups.
+- `github.com/global-torque/go-common/tests/v2`: table-test runner, HTTP test actions, JSON comparison helpers.
+- `github.com/global-torque/go-common/validator/v2`: `go-playground/validator` wrapper returning `*response.Error`.
+- `github.com/global-torque/go-common/verser/v2`: process-global service/version/repository/revision metadata.
+- `docker` module (`github.com/global-torque/go-common/docker/v2`): build image seed, not a reusable library import.
 
 ## Component Notes
 
 ### `configurator`
 
-- Import path: `github.com/global-torque/go-common/configurator`.
+- Import path: `github.com/global-torque/go-common/configurator/v2`.
 - Use for: loading env-backed config structs during startup, optionally from `.env` or `ENV_FILE`.
 - Do not use for: hot-path config reloads; `NewConfiguration` reads disk/env each call.
 - Key APIs: `Parse[T](prefixes ...string)`, `NewConfiguration(conf, prefixes...)`, `LoadDotEnv`, `NewConfigurator`, `Get`, `MustGet`, `New`, `MustNew`, `Print`, `RequiredString`.
@@ -56,7 +56,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `context/keys`
 
-- Import path: `github.com/global-torque/go-common/context/keys`.
+- Import path: `github.com/global-torque/go-common/context/v2/keys`.
 - Use for: shared context values and HTTP header names used by logger, server, queue, and httputils.
 - Do not use for: unrelated package-private context keys; avoid collisions by keeping local keys local.
 - Key APIs: `ContextKey`, `ContextStr`, `GetAsString`, `GetCtxValue`, `SetCtxValue`, `SetCtxValues`.
@@ -67,7 +67,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `response`
 
-- Import path: `github.com/global-torque/go-common/response`.
+- Import path: `github.com/global-torque/go-common/response/v2`.
 - Use for: user-facing application errors that HTTP handlers can serialize consistently.
 - Do not use for: internal-only errors that should remain plain wrapped errors until the boundary maps them.
 - Key APIs: `Error`, `ErrorMessages`, `New`, `NewError`, `BadRequest`, `NotFound`, `InternalError`, `ErrBadRequest`, `ErrUnauthorized`, `ErrInternalError`, `MessagesFromAny`, `SingleErrorMessage`.
@@ -78,7 +78,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `validator`
 
-- Import path: `github.com/global-torque/go-common/validator`.
+- Import path: `github.com/global-torque/go-common/validator/v2`.
 - Use for: validating request DTOs and returning field-keyed `*response.Error` maps.
 - Do not use for: config validation that needs raw `go-playground/validator` errors; `db` does that directly.
 - Key APIs: `New`, `Validator.Validate`, `Validator.Verify`, `ParamName`, custom `path` validation.
@@ -89,7 +89,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `logger`
 
-- Import path: `github.com/global-torque/go-common/logger`.
+- Import path: `github.com/global-torque/go-common/logger/v2`.
 - Use for: structured zerolog logging with component, severity, stack traces, and optional service context.
 - Do not use for: ad hoc `fmt.Println` or Echo native logger output in services.
 - Key APIs: `Logger`, `NewLogger`, `NewComponentLogger`, `NewComponentLoggerE`, `NewDefaultLogger`, `NewDefaultLoggerE`, `DefaultStdoutLogger`, `FromCtx`, `ServiceContext`.
@@ -100,7 +100,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `logger/echo_google_cloud`
 
-- Import path: `github.com/global-torque/go-common/logger/echo_google_cloud`.
+- Import path: `github.com/global-torque/go-common/logger/v2/echo_google_cloud`.
 - Use for: logs that should include Google Cloud Error Reporting `@type` on error, fatal, and panic levels.
 - Do not use for: console-local logging where the Google error-reporting event type is noisy.
 - Key APIs: `NewEchoGCLogger`, `NewComponentLogger`, `NewComponentLoggerE`, `DefaultStdoutLogger`, `EchoGoogleCloud`.
@@ -111,7 +111,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `logger/fxzerolog`
 
-- Import path: `github.com/global-torque/go-common/logger/fxzerolog`.
+- Import path: `github.com/global-torque/go-common/logger/v2/fxzerolog`.
 - Use for: adapting `logger.Logger` to Uber Fx event logging.
 - Do not use for: application logs; use `logger` directly.
 - Key APIs: `Init`, `ZeroLogger.LogEvent`.
@@ -122,7 +122,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `logger/example/*` and `logger/tests`
 
-- Import path: `github.com/global-torque/go-common/logger/example/cli`, `github.com/global-torque/go-common/logger/example/web`, and `github.com/global-torque/go-common/logger/tests`.
+- Import path: `github.com/global-torque/go-common/logger/example/v2/cli`, `github.com/global-torque/go-common/logger/example/v2/web`, and `github.com/global-torque/go-common/logger/v2/tests`.
 - Use for: source examples and logger module self-tests only.
 - Do not use for: reusable service code; import `logger`, `logger/echo_google_cloud`, or `logger/fxzerolog` instead.
 - Key APIs: example `main` packages demonstrate `NewComponentLogger`; test package has local stdout helpers.
@@ -133,7 +133,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `httputils`
 
-- Import path: `github.com/global-torque/go-common/httputils`.
+- Import path: `github.com/global-torque/go-common/httputils/v2`.
 - Use for: integration-test HTTP calls, small direct HTTP clients, multipart upload requests, and forwarded-IP normalization.
 - Do not use for: production clients needing retries, tracing, custom transports, or richer error policies unless you inject your own `http.Client`.
 - Key APIs: `Request`, `CreateDefaultRequest`, `CreateRequestWithFiles`, `SendRequest`, `SendRequestWithClient`, `GetIPAddress`.
@@ -144,7 +144,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `server`
 
-- Import path: `github.com/global-torque/go-common/server`.
+- Import path: `github.com/global-torque/go-common/server/v2`.
 - Use for: Echo HTTP services using Fx lifecycle, common middleware, validation, healthcheck, metrics, and response error serialization.
 - Do not use for: non-Echo servers or services that need fully custom middleware ordering.
 - Key APIs: `HTTPServer`, `InitAndRun`, `NewServer`, `MustNewServer`, `AddDefaultMiddlewares`, `StartServer`, `ErrorResponse`, `ErrorBadRequestResponse`, `NewHandlerGroups`.
@@ -155,7 +155,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `server/route`
 
-- Import path: `github.com/global-torque/go-common/server/route`.
+- Import path: `github.com/global-torque/go-common/server/v2/route`.
 - Use for: declaring HTTP route groups consumed by `server.InitHandlerGroups`.
 - Do not use for: direct Echo route registration outside the shared server module.
 - Key APIs: `Route`, `Configurator`, `ConfiguratorIn`.
@@ -166,7 +166,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `server/middleware`
 
-- Import path: `github.com/global-torque/go-common/server/middleware`.
+- Import path: `github.com/global-torque/go-common/server/v2/middleware`.
 - Use for: shared Echo middleware for auth, JWT context, request IP/time, logger context, and request/response body dump.
 - Do not use for: authorization rules that belong to a domain service.
 - Key APIs: `SetIPAddress`, `SetRequestTime`, `SetLogger`, `CheckIdentityID`, `NewAuth0MW`, `NewAuthMiddleware`, `MustNewAuthMiddleware`, `ParseJWTPayload`, `SetJWTPayload`, `GetJWTPayload`, `ExtractTokenFromString`, `FileAndHealtchCheckSkipper`, `BodyDumpHandler`.
@@ -177,7 +177,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `server/healthcheck`
 
-- Import path: `github.com/global-torque/go-common/server/healthcheck`.
+- Import path: `github.com/global-torque/go-common/server/v2/healthcheck`.
 - Use for: the default `GET /healthcheck` endpoint.
 - Do not use for: readiness/liveness dependency checks; this handler only returns `200 OK` and body `OK`.
 - Key APIs: `Healthcheck`.
@@ -188,7 +188,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `db`
 
-- Import path: `github.com/global-torque/go-common/db`.
+- Import path: `github.com/global-torque/go-common/db/v2`.
 - Use for: PostgreSQL pgx pool/connection setup, pgx query logging, UTC session time zone, and PostgreSQL notifications.
 - Do not use for: non-PostgreSQL databases; `Config.Type` validates only `postgres`.
 - Key APIs: `Config`, `New`, `MustNew`, `NewDB`, `NewPool`, `NewPoolFromConfig`, `NewConn`, `NewConnFromConfig`, `GetConfigPool`, `GetConfigConn`, `Subscribe`, `NewDBLogger`, `CleanSQL`, `Repository`.
@@ -199,7 +199,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `db/dbtests`
 
-- Import path: `github.com/global-torque/go-common/db/dbtests`.
+- Import path: `github.com/global-torque/go-common/db/v2/dbtests`.
 - Use for: integration tests that need PostgreSQL fixtures, cleanup, and SQL assertions.
 - Do not use for: unit tests without a real PostgreSQL database.
 - Key APIs: `NewFixture`, `NewFixturesManager`, `FixturesManager.CleanAndApply`, `WithFixtures`, `Close`, `ExecQuery`, `SelectQuery`, `RawSQL`, `SQL`.
@@ -210,7 +210,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `orm`
 
-- Import path: `github.com/global-torque/go-common/orm`.
+- Import path: `github.com/global-torque/go-common/orm/v2`.
 - Use for: small pgx repositories that want Squirrel SQL generation without a full ORM.
 - Do not use for: domain side effects, Pub/Sub history logs, model callbacks, or implicit reflection-based saves.
 - Key APIs: `Repository`, `Beginner`, `DefaultFields`, `RetrieveOne`, `RetrieveAll`, `Create`, `Update`, `Exists`, `Delete`, `Save`, `SaveModel`, `PrimaryKeyer`, `ChangeResetter`, `SaveResult`, `ChangeSet`, `WithTx`.
@@ -221,7 +221,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `orm/pgtype`
 
-- Import path: `github.com/global-torque/go-common/orm/pgtype`.
+- Import path: `github.com/global-torque/go-common/orm/v2/pgtype`.
 - Use for: migrating old pgtype-style nullable fields to pgx v5 codecs.
 - Do not use for: new domain models that can use native pointers, `pgtype` v5 types, or custom value objects cleanly.
 - Key APIs: `Status`, `Undefined`, `Null`, `Present`, `Text`, `Timestamptz`, `JSON`, `JSONB`, `InfinityModifier`, `Infinity`, `None`, `NegativeInfinity`.
@@ -232,7 +232,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `queue`
 
-- Import path: `github.com/global-torque/go-common/queue`.
+- Import path: `github.com/global-torque/go-common/queue/v2`.
 - Use for: long-running Pub/Sub pull workers with route-based callbacks and optional deduplication.
 - Do not use for: Pub/Sub push HTTP endpoints; use `queue/pubsubpush` and service handlers.
 - Key APIs: `PubSubListener`, `PubSubRoute`, `Deduper`, `New`, `MustNew`, `NewWithDeduper`, `MustNewWithDeduper`, `Start(ctx)`, `Close`, `AddRoutes`.
@@ -243,7 +243,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `queue/pclient`
 
-- Import path: `github.com/global-torque/go-common/queue/pclient`.
+- Import path: `github.com/global-torque/go-common/queue/v2/pclient`.
 - Use for: direct Google Pub/Sub topic/subscription management, publish, and pull listeners.
 - Do not use for: service-level routing when `queue.PubSubListener` is enough.
 - Key APIs: `Client`, `New`, `Close`, `CreateTopic`, `DeleteTopic`, `CreateSubscription`, `DeleteSubscription`, `TopicExist`, `SubscriptionExist`, `Publish`, `PublishToTopic`, `PublishEvent`, `PublishWebhook`, `ListenRawMsgs`, `ListenEvents`, `ListenWebhooks`, `Message`, `Event`, `Webhook`, `SetDefaultEventCtx`, `SetDefaultWebhookCtx`.
@@ -254,7 +254,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `queue/pubsubpush`
 
-- Import path: `github.com/global-torque/go-common/queue/pubsubpush`.
+- Import path: `github.com/global-torque/go-common/queue/v2/pubsubpush`.
 - Use for: HTTP push subscription handlers that decode Google Pub/Sub envelopes or need a code-level max-attempt guard.
 - Do not use for: pull subscriptions.
 - Key APIs: `PushRequest`, `PushMessage`, `MaxAttempts`.
@@ -265,7 +265,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `queue/qtests`
 
-- Import path: `github.com/global-torque/go-common/queue/qtests`.
+- Import path: `github.com/global-torque/go-common/queue/v2/qtests`.
 - Use for: Pub/Sub emulator integration-test fixtures and actions.
 - Do not use for: production Pub/Sub code.
 - Key APIs: `NewFixture`, `NewFixturesManager`, `FixturesManager.CleanAndApply`, `Delete`, `Clean`, `Close`, `SendPubSubEvent`, `SendPushWebhook`, `SendPushEvent`, `SendPushTo`.
@@ -276,7 +276,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `tests`
 
-- Import path: `github.com/global-torque/go-common/tests`.
+- Import path: `github.com/global-torque/go-common/tests/v2`.
 - Use for: table-driven integration scenarios with reusable actions and JSON response comparison.
 - Do not use for: plain unit tests where standard `testing` and `assert` are clearer.
 - Key APIs: `RunTableTest`, `TableTest`, `TestScenario`, `SomeAction`, `TestContext`, `ExpectedResponse`, `ExpectedResult`, `SendHTTPRequest`, `SendHTTPRequestFiles`, `Sleep`, `CompareJSONBody`, `AllowAny`, `AllowDictAny`, `IsNil`.
@@ -287,7 +287,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `misc/round`
 
-- Import path: `github.com/global-torque/go-common/misc/round`.
+- Import path: `github.com/global-torque/go-common/misc/v2/round`.
 - Use for: rounding percentages or weights to integers while preserving a required total.
 - Do not use for: currency or precision-sensitive decimal arithmetic.
 - Key APIs: `Value`, `Values`, `SmartRound`, `ErrRound`.
@@ -298,7 +298,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `verser`
 
-- Import path: `github.com/global-torque/go-common/verser`.
+- Import path: `github.com/global-torque/go-common/verser/v2`.
 - Use for: process-global service metadata read by logger/server middleware.
 - Do not use for: per-request or tenant-specific metadata.
 - Key APIs: `SetServiceVersionRepositoryRevision`, `GetService`, `GetVersion`, `GetRepository`, `GetRevisionID`.
@@ -309,7 +309,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 
 ### `docker`
 
-- Import path: do not import as a library; the module path is currently `github.com/global-torque/go-common/docker`.
+- Import path: do not import as a library; the module path is currently `github.com/global-torque/go-common/docker/v2`.
 - Use for: building the shared `cr.webdevelop.pro/global-torque/go-common` image and copying common `etc` files into service images.
 - Do not use for: application package imports.
 - Key APIs: `docker/Dockerfile`, `docker/etc/make.sh`, `docker/etc/golangci.yml`, `docker/etc/air.toml`, `docker/build-deploy.sh`.

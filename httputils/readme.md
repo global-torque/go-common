@@ -1,6 +1,6 @@
 # httputils
 
-Import path: `github.com/global-torque/go-common/httputils`
+Import path: `github.com/global-torque/go-common/httputils/v2`
 
 Small HTTP helpers for integration tests, direct requests, multipart uploads,
 and forwarded IP extraction.
@@ -53,7 +53,7 @@ body, resp, err := httputils.SendRequest(req)
 
 ## Testing
 
-Use this package through `github.com/global-torque/go-common/tests` helpers for
+Use this package through `github.com/global-torque/go-common/tests/v2` helpers for
 integration tests:
 
 - `tests.SendHTTPRequest`

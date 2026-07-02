@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/global-torque/go-common/logger"
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/labstack/echo/v4"
 )
 

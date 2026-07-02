@@ -1,6 +1,6 @@
 # Echo HTTP Servers With go-common/server
 
-Use `github.com/global-torque/go-common/server` for Echo services in this repo. The package standardizes Echo v4.15.2 setup, route registration, middleware order, validation, logging, metrics, and error responses.
+Use `github.com/global-torque/go-common/server/v2` for Echo services in this repo. The package standardizes Echo v4.15.2 setup, route registration, middleware order, validation, logging, metrics, and error responses.
 
 ## Server Construction
 

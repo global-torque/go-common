@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/global-torque/go-common/db"
-	"github.com/global-torque/go-common/tests"
+	"github.com/global-torque/go-common/db/v2"
+	"github.com/global-torque/go-common/tests/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )

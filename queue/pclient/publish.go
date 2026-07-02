@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/global-torque/go-common/validator"
+	"github.com/global-torque/go-common/validator/v2"
 	"github.com/pkg/errors"
 )
 

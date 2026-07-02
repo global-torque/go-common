@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/global-torque/go-common/server/route"
+	"github.com/global-torque/go-common/server/v2/route"
 	"go.uber.org/fx"
 )
 

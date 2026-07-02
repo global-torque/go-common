@@ -1,6 +1,6 @@
 # docker
 
-Module path: `github.com/global-torque/go-common/docker`
+Module path: `github.com/global-torque/go-common/docker/v2`
 
 Build seed for the shared go-common Docker image. This directory is not a
 reusable go-common library package.
@@ -59,6 +59,6 @@ then build and push the Docker image.
 
 ## Gotchas
 
-- `docker/go.mod` module path is currently `github.com/global-torque/go-common/docker`.
+- `docker/go.mod` module path is currently `github.com/global-torque/go-common/docker/v2`.
 - `docker/main.go` blank-imports common dependencies to warm the image cache.
 - This module is a build artifact, not a public package API.

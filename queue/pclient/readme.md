@@ -1,6 +1,6 @@
 # queue/pclient
 
-Import path: `github.com/global-torque/go-common/queue/pclient`
+Import path: `github.com/global-torque/go-common/queue/v2/pclient`
 
 Google Cloud Pub/Sub v2 client wrapper for topic/subscription management,
 publishing, and pull listeners.

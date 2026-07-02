@@ -5,8 +5,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/verser"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/verser/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )

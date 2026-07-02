@@ -1,6 +1,6 @@
 # logger/tests
 
-Import path: `github.com/global-torque/go-common/logger/tests`
+Import path: `github.com/global-torque/go-common/logger/v2/tests`
 
 Internal test package for logger behavior.
 
@@ -12,7 +12,7 @@ Internal test package for logger behavior.
 ## Do Not Use For
 
 - Reusable service test helpers. Prefer
-  `github.com/global-torque/go-common/tests`.
+  `github.com/global-torque/go-common/tests/v2`.
 
 ## Key APIs
 

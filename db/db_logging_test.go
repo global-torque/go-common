@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/global-torque/go-common/context/keys"
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/tests"
+	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/tests/v2"
 	"github.com/stretchr/testify/assert"
 )
 

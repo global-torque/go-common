@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/global-torque/go-common/context/keys"
-	"github.com/global-torque/go-common/httputils"
-	"github.com/global-torque/go-common/logger"
-	"github.com/global-torque/go-common/verser"
+	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/httputils/v2"
+	"github.com/global-torque/go-common/logger/v2"
+	"github.com/global-torque/go-common/verser/v2"
 	"github.com/rs/zerolog"
 )
 

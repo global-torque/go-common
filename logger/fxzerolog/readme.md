@@ -1,6 +1,6 @@
 # logger/fxzerolog
 
-Import path: `github.com/global-torque/go-common/logger/fxzerolog`
+Import path: `github.com/global-torque/go-common/logger/v2/fxzerolog`
 
 Adapter from `logger.Logger` to Uber Fx's `fxevent.Logger`.
 
@@ -10,7 +10,7 @@ Adapter from `logger.Logger` to Uber Fx's `fxevent.Logger`.
 
 ## Do Not Use For
 
-- Application logs. Use `github.com/global-torque/go-common/logger` directly.
+- Application logs. Use `github.com/global-torque/go-common/logger/v2` directly.
 
 ## Key APIs
 

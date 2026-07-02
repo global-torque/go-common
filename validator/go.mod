@@ -1,9 +1,9 @@
-module github.com/global-torque/go-common/validator
+module github.com/global-torque/go-common/validator/v2
 
 go 1.25.0
 
 require (
-	github.com/global-torque/go-common/response v1.0.19
+	github.com/global-torque/go-common/response/v2 v2.0.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -24,5 +24,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/global-torque/go-common/response => ../response
