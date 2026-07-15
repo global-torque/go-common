@@ -12,6 +12,7 @@ require (
 	github.com/global-torque/go-common/tests/v2 v2.0.1
 	github.com/global-torque/go-common/validator/v2 v2.0.1
 	github.com/global-torque/go-common/verser/v2 v2.0.1
+	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.35.1
@@ -38,7 +39,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.3 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect

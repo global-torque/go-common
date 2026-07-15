@@ -19,6 +19,8 @@ DTOs and Echo middleware for Google Pub/Sub push subscription HTTP requests.
 - `PushRequest`
 - `PushMessage`
 - `MaxAttempts(n)`
+- `domainevents.DecodeV1` for strict PostgreSQL outbox payload decoding
+- `domainevents.DomainEventV1.ValidateDelivery` for attributes and ordering keys
 
 ## Wire Format
 

@@ -30,10 +30,13 @@ func MaxAttempts(n int) echo.MiddlewareFunc {
 			if err != nil {
 				return next(c)
 			}
+
 			c.Request().Body = io.NopCloser(bytes.NewReader(body))
 
 			var req PushRequest
-			if err := json.Unmarshal(body, &req); err != nil {
+
+			err = json.Unmarshal(body, &req)
+			if err != nil {
 				return next(c)
 			}
 
@@ -45,6 +48,7 @@ func MaxAttempts(n int) echo.MiddlewareFunc {
 					Str("subscription", req.Subscription).
 					Bytes("data", req.Message.Data).
 					Msg("dropping pubsub push after max delivery attempts")
+
 				return c.NoContent(http.StatusNoContent)
 			}
 
