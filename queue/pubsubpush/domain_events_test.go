@@ -2,9 +2,12 @@ package pubsubpush
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	domainevents "github.com/global-torque/go-common/queue/v2/domainevents"
 	"github.com/stretchr/testify/require"
@@ -86,6 +89,138 @@ func TestDecodeDomainEventPushRequiresExactSubscriptionAndStrictEnvelope(t *test
 	unknown := append(payload[:len(payload)-1], []byte(`,"unexpected":true}`)...)
 	_, err = DecodeDomainEventPush(bytes.NewReader(unknown), expected)
 	require.ErrorIs(t, err, domainevents.ErrMalformedEvent)
+}
+
+func TestDecodeDomainEventPushAcceptsPubSubProtoJSONFieldNames(t *testing.T) {
+	t.Parallel()
+
+	const expected = "projects/webdevelop-live/subscriptions/dev-domain-events-escrow-worker-dev"
+
+	tests := []struct {
+		name            string
+		messageMetadata string
+		attemptMetadata string
+	}{
+		{
+			name:            "protobuf JSON names",
+			messageMetadata: `"messageId":"pubsub-camel","publishTime":"2026-07-17T09:00:00Z","orderingKey":"offer:42"`,
+			attemptMetadata: `,"deliveryAttempt":2`,
+		},
+		{
+			name:            "original proto field names",
+			messageMetadata: `"message_id":"pubsub-snake","publish_time":"2026-07-17T09:00:00Z","ordering_key":"offer:42"`,
+			attemptMetadata: `,"delivery_attempt":3`,
+		},
+		{
+			name:            "mixed recognized names",
+			messageMetadata: `"message_id":"pubsub-mixed","publishTime":"2026-07-17T09:00:00Z","ordering_key":"offer:42"`,
+			attemptMetadata: `,"deliveryAttempt":4`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			payload := domainEventPushPayload(expected, test.messageMetadata, test.attemptMetadata)
+			delivery, err := DecodeDomainEventPush(bytes.NewReader(payload), expected)
+			require.NoError(t, err)
+			require.Equal(t, "offer.status.changed.v1", delivery.Event.Type)
+			require.Equal(t, "42", delivery.Event.ObjectID)
+			require.NotEmpty(t, delivery.MessageID)
+			require.GreaterOrEqual(t, delivery.Attempt, 2)
+		})
+	}
+}
+
+func TestDecodeDomainEventPushRejectsDuplicateAliasConflictsAndUnknownFields(t *testing.T) {
+	t.Parallel()
+
+	const expected = "projects/webdevelop-live/subscriptions/dev-domain-events-escrow-worker-dev"
+
+	tests := []struct {
+		name            string
+		messageMetadata string
+		attemptMetadata string
+	}{
+		{
+			name:            "same metadata through both aliases",
+			messageMetadata: `"messageId":"pubsub-123","message_id":"pubsub-123","orderingKey":"offer:42"`,
+		},
+		{
+			name:            "conflicting metadata through both aliases",
+			messageMetadata: `"messageId":"pubsub-123","message_id":"pubsub-forged","orderingKey":"offer:42"`,
+		},
+		{
+			name:            "duplicate exact field name",
+			messageMetadata: `"message_id":"pubsub-123","message_id":"pubsub-123","ordering_key":"offer:42"`,
+		},
+		{
+			name:            "conflicting delivery attempt aliases",
+			messageMetadata: `"message_id":"pubsub-123","ordering_key":"offer:42"`,
+			attemptMetadata: `,"deliveryAttempt":2,"delivery_attempt":3`,
+		},
+		{
+			name:            "unknown message metadata",
+			messageMetadata: `"message_id":"pubsub-123","ordering_key":"offer:42","trace_id":"forged"`,
+		},
+		{
+			name:            "case-insensitive near match is unknown",
+			messageMetadata: `"MessageId":"pubsub-123","ordering_key":"offer:42"`,
+		},
+		{
+			name:            "unknown top-level metadata",
+			messageMetadata: `"message_id":"pubsub-123","ordering_key":"offer:42"`,
+			attemptMetadata: `,"unexpected":true`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			payload := domainEventPushPayload(expected, test.messageMetadata, test.attemptMetadata)
+			_, err := DecodeDomainEventPush(bytes.NewReader(payload), expected)
+			require.ErrorIs(t, err, domainevents.ErrMalformedEvent)
+		})
+	}
+}
+
+func domainEventPushPayload(subscription, messageMetadata, attemptMetadata string) []byte {
+	const event = `{"id":"6d0aaf23-d5ea-4ed5-b020-60fb9ba72155","type":"offer.status.changed.v1","version":1,"source":"postgres-outbox","object":"offer","object_id":"42","field":"status","data":{"status":"legal-accepted"},"time":"2026-07-13T12:34:56Z"}`
+
+	data := base64.StdEncoding.EncodeToString([]byte(event))
+
+	return []byte(fmt.Sprintf(
+		`{"message":{"attributes":{"type":"offer.status.changed.v1","version":"1","object":"offer","object_id":"42","field":"status"},"data":%q,%s},"subscription":%q%s}`,
+		data,
+		messageMetadata,
+		subscription,
+		attemptMetadata,
+	))
+}
+
+func TestPushRequestUnmarshalPreservesPublishTimeAliases(t *testing.T) {
+	t.Parallel()
+
+	const expected = "projects/webdevelop-live/subscriptions/dev-domain-events-escrow-worker-dev"
+	const published = "2026-07-17T09:00:00Z"
+
+	for _, field := range []string{"publishTime", "publish_time"} {
+		t.Run(field, func(t *testing.T) {
+			t.Parallel()
+
+			payload := domainEventPushPayload(
+				expected,
+				fmt.Sprintf(`"message_id":"pubsub-123",%q:%q,"ordering_key":"offer:42"`, field, published),
+				``,
+			)
+
+			var request PushRequest
+			require.NoError(t, json.Unmarshal(payload, &request))
+			require.Equal(t, time.Date(2026, time.July, 17, 9, 0, 0, 0, time.UTC), request.Message.PublishTime)
+		})
+	}
 }
 
 func TestSubscriptionResource(t *testing.T) {
