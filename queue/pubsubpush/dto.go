@@ -62,9 +62,15 @@ func (request *PushRequest) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	err = decodeField(fields, fieldDeliveryAttempt, &request.DeliveryAttempt)
+	var attempt int
+
+	present, err := decodeAliasedField(fields, fieldDeliveryAttempt, &attempt)
 	if err != nil {
 		return err
+	}
+
+	if present {
+		request.DeliveryAttempt = &attempt
 	}
 
 	return nil
@@ -108,17 +114,17 @@ func (message *PushMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	err = decodeField(fields, fieldMessageID, &message.MessageID)
+	_, err = decodeAliasedField(fields, fieldMessageID, &message.MessageID)
 	if err != nil {
 		return err
 	}
 
-	err = decodeField(fields, fieldPublishTime, &message.PublishTime)
+	_, err = decodeAliasedField(fields, fieldPublishTime, &message.PublishTime)
 	if err != nil {
 		return err
 	}
 
-	err = decodeField(fields, fieldOrderingKey, &message.OrderingKey)
+	_, err = decodeAliasedField(fields, fieldOrderingKey, &message.OrderingKey)
 	if err != nil {
 		return err
 	}
@@ -126,7 +132,12 @@ func (message *PushMessage) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[string]json.RawMessage, error) {
+type rawJSONField struct {
+	name  string
+	value json.RawMessage
+}
+
+func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[string][]rawJSONField, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 
 	token, err := decoder.Token()
@@ -139,8 +150,8 @@ func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[stri
 		return nil, fmt.Errorf("%w: expected JSON object", errInvalidPushJSON)
 	}
 
-	fields := make(map[string]json.RawMessage)
-	sources := make(map[string]string)
+	fields := make(map[string][]rawJSONField)
+	seenNames := make(map[string]struct{})
 
 	for decoder.More() {
 		token, err = decoder.Token()
@@ -158,9 +169,11 @@ func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[stri
 			return nil, fmt.Errorf("%w: unknown field %q", errInvalidPushJSON, name)
 		}
 
-		if previous, exists := sources[canonical]; exists {
-			return nil, fmt.Errorf("%w: duplicate field %q (also provided as %q)", errInvalidPushJSON, name, previous)
+		if _, exists := seenNames[name]; exists {
+			return nil, fmt.Errorf("%w: duplicate field %q", errInvalidPushJSON, name)
 		}
+
+		seenNames[name] = struct{}{}
 
 		var raw json.RawMessage
 
@@ -169,8 +182,7 @@ func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[stri
 			return nil, fmt.Errorf("decode field %q: %w", name, err)
 		}
 
-		fields[canonical] = raw
-		sources[canonical] = name
+		fields[canonical] = append(fields[canonical], rawJSONField{name: name, value: raw})
 	}
 
 	token, err = decoder.Token()
@@ -190,18 +202,50 @@ func decodeStrictObject(data []byte, acceptedFields map[string]string) (map[stri
 	return fields, nil
 }
 
-func decodeField(fields map[string]json.RawMessage, name string, target any) error {
-	raw, exists := fields[name]
+func decodeField(fields map[string][]rawJSONField, name string, target any) error {
+	rawFields, exists := fields[name]
 	if !exists {
 		return nil
 	}
 
-	err := json.Unmarshal(raw, target)
+	err := json.Unmarshal(rawFields[0].value, target)
 	if err != nil {
 		return fmt.Errorf("decode field %q: %w", name, err)
 	}
 
 	return nil
+}
+
+func decodeAliasedField[T comparable](fields map[string][]rawJSONField, name string, target *T) (bool, error) {
+	rawFields, exists := fields[name]
+	if !exists {
+		return false, nil
+	}
+
+	err := json.Unmarshal(rawFields[0].value, target)
+	if err != nil {
+		return false, fmt.Errorf("decode field %q: %w", rawFields[0].name, err)
+	}
+
+	for _, rawField := range rawFields[1:] {
+		var aliasValue T
+
+		err = json.Unmarshal(rawField.value, &aliasValue)
+		if err != nil {
+			return false, fmt.Errorf("decode field %q: %w", rawField.name, err)
+		}
+
+		if aliasValue != *target {
+			return false, fmt.Errorf(
+				"%w: conflicting fields %q and %q",
+				errInvalidPushJSON,
+				rawFields[0].name,
+				rawField.name,
+			)
+		}
+	}
+
+	return true, nil
 }
 
 func requireJSONEOF(decoder *json.Decoder) error {

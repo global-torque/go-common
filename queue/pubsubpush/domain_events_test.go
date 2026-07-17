@@ -116,6 +116,13 @@ func TestDecodeDomainEventPushAcceptsPubSubProtoJSONFieldNames(t *testing.T) {
 			messageMetadata: `"message_id":"pubsub-mixed","publishTime":"2026-07-17T09:00:00Z","ordering_key":"offer:42"`,
 			attemptMetadata: `,"deliveryAttempt":4`,
 		},
+		{
+			name: "official wrapped envelope with equal aliases",
+			messageMetadata: `"messageId":"pubsub-both","message_id":"pubsub-both",` +
+				`"publishTime":"2026-07-17T09:00:00Z","publish_time":"2026-07-17T09:00:00Z",` +
+				`"orderingKey":"offer:42","ordering_key":"offer:42"`,
+			attemptMetadata: `,"deliveryAttempt":5,"delivery_attempt":5`,
+		},
 	}
 
 	for _, test := range tests {
@@ -144,12 +151,17 @@ func TestDecodeDomainEventPushRejectsDuplicateAliasConflictsAndUnknownFields(t *
 		attemptMetadata string
 	}{
 		{
-			name:            "same metadata through both aliases",
-			messageMetadata: `"messageId":"pubsub-123","message_id":"pubsub-123","orderingKey":"offer:42"`,
-		},
-		{
 			name:            "conflicting metadata through both aliases",
 			messageMetadata: `"messageId":"pubsub-123","message_id":"pubsub-forged","orderingKey":"offer:42"`,
+		},
+		{
+			name: "conflicting publish time aliases",
+			messageMetadata: `"message_id":"pubsub-123","publishTime":"2026-07-17T09:00:00Z",` +
+				`"publish_time":"2026-07-17T09:00:01Z","ordering_key":"offer:42"`,
+		},
+		{
+			name:            "conflicting ordering key aliases",
+			messageMetadata: `"message_id":"pubsub-123","orderingKey":"offer:42","ordering_key":"offer:43"`,
 		},
 		{
 			name:            "duplicate exact field name",
