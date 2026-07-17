@@ -36,8 +36,12 @@ const (
 )
 
 var (
-	errInvalidJSON = errors.New("invalid JSON")
-	errUndefined   = errors.New("cannot encode status undefined")
+	errInvalidJSON            = errors.New("invalid JSON")
+	errUndefined              = errors.New("cannot encode status undefined")
+	errCannotConvertTimestamp = errors.New("cannot convert to Timestamptz")
+	errUseJSONPointer         = errors.New("use pointer to pgtype.JSON instead of value")
+	errUseJSONBPointer        = errors.New("use pointer to pgtype.JSONB instead of value")
+	errCannotAssignNonPresent = errors.New("cannot assign non-present status")
 )
 
 // Text represents PostgreSQL text with old pgtype Status semantics.
@@ -103,7 +107,7 @@ func (t *Timestamptz) Set(src any) error {
 			return t.Set(converted)
 		}
 
-		return fmt.Errorf("cannot convert %v to Timestamptz", value)
+		return fmt.Errorf("%w: %v", errCannotConvertTimestamp, value)
 	}
 
 	return nil
@@ -222,9 +226,9 @@ func (j *JSONB) Set(src any) error {
 
 		*j = JSONB{Bytes: value, Status: Present}
 	case JSON:
-		return errors.New("use pointer to pgtype.JSON instead of value")
+		return errUseJSONPointer
 	case JSONB:
-		return errors.New("use pointer to pgtype.JSONB instead of value")
+		return errUseJSONBPointer
 	default:
 		buf, err := json.Marshal(value)
 		if err != nil {
@@ -242,7 +246,7 @@ func (j *JSONB) AssignTo(dst any) error {
 	switch value := dst.(type) {
 	case *string:
 		if j.Status != Present {
-			return fmt.Errorf("cannot assign non-present status to %T", dst)
+			return fmt.Errorf("%w to %T", errCannotAssignNonPresent, dst)
 		}
 
 		*value = string(j.Bytes)
@@ -250,6 +254,7 @@ func (j *JSONB) AssignTo(dst any) error {
 		if j.Status == Present {
 			str := string(j.Bytes)
 			*value = &str
+
 			return nil
 		}
 
@@ -350,9 +355,11 @@ func underlyingTime(value any) (time.Time, bool) {
 		return underlyingTime(refValue.Elem().Interface())
 	}
 
-	timeType := reflect.TypeOf(time.Time{})
+	timeType := reflect.TypeFor[time.Time]()
 	if refValue.Type().ConvertibleTo(timeType) {
-		return refValue.Convert(timeType).Interface().(time.Time), true
+		converted, ok := refValue.Convert(timeType).Interface().(time.Time)
+
+		return converted, ok
 	}
 
 	return time.Time{}, false

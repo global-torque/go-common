@@ -29,8 +29,6 @@ type Repository interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	// LogPubSubMsg(ctx context.Context, topic string, msg *pclient.Message) error
-	Lg() logger.Logger
 }
 
 // New returns new DB instance.

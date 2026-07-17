@@ -44,9 +44,10 @@ type stubRows struct {
 	idx     int
 	err     error
 	scanErr error
+	closed  bool
 }
 
-func (r *stubRows) Close()                        {}
+func (r *stubRows) Close()                        { r.closed = true }
 func (r *stubRows) Err() error                    { return r.err }
 func (r *stubRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
 func (r *stubRows) FieldDescriptions() []pgconn.FieldDescription {
@@ -55,6 +56,240 @@ func (r *stubRows) FieldDescriptions() []pgconn.FieldDescription {
 		fields[i] = pgconn.FieldDescription{Name: field}
 	}
 	return fields
+}
+
+type testProjection struct {
+	Name string `db:"name"`
+}
+
+func TestRetrieveOneAsBuildsProjectionSQLWithSuffix(t *testing.T) {
+	var gotSQL string
+	var gotArgs []any
+	rows := &stubRows{
+		fields: []string{"name"},
+		values: [][]any{{"alice"}},
+	}
+	repo := stubRepository{
+		query: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
+			gotSQL = sql
+			gotArgs = args
+			return rows, nil
+		},
+	}
+
+	got, err := RetrieveOneAs[testModel, testProjection](
+		context.Background(),
+		repo,
+		sq.Eq{"id": 7},
+		sq.Expr("ORDER BY id LIMIT ?", 1),
+	)
+	if err != nil {
+		t.Fatalf("RetrieveOneAs returned error: %v", err)
+	}
+	if gotSQL != "SELECT name FROM test_models WHERE id = $1 ORDER BY id LIMIT $2" {
+		t.Fatalf("unexpected SQL: %s", gotSQL)
+	}
+	if !reflect.DeepEqual(gotArgs, []any{7, 1}) {
+		t.Fatalf("unexpected args: %#v", gotArgs)
+	}
+	if got.Name != "alice" {
+		t.Fatalf("unexpected projection: %#v", got)
+	}
+	if !rows.closed {
+		t.Fatal("expected rows to be closed")
+	}
+}
+
+func TestRetrieveAllAsReturnsMultipleAndEmptyRows(t *testing.T) {
+	tests := []struct {
+		name   string
+		values [][]any
+		want   []string
+	}{
+		{name: "multiple", values: [][]any{{"alice"}, {"bob"}}, want: []string{"alice", "bob"}},
+		{name: "empty", values: nil, want: []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := &stubRows{fields: []string{"name"}, values: tt.values}
+			repo := stubRepository{
+				query: func(_ context.Context, _ string, _ ...any) (pgx.Rows, error) {
+					return rows, nil
+				},
+			}
+
+			got, err := RetrieveAllAs[testModel, testProjection](context.Background(), repo, nil)
+			if err != nil {
+				t.Fatalf("RetrieveAllAs returned error: %v", err)
+			}
+			if got == nil {
+				t.Fatal("expected non-nil result")
+			}
+			names := make([]string, 0, len(got))
+			for _, item := range got {
+				names = append(names, item.Name)
+			}
+			if !reflect.DeepEqual(names, tt.want) {
+				t.Fatalf("unexpected names: %#v", names)
+			}
+			if !rows.closed {
+				t.Fatal("expected rows to be closed")
+			}
+		})
+	}
+}
+
+func TestRetrieveAllAsScansNullableValues(t *testing.T) {
+	note := "present"
+	rows := &stubRows{
+		fields: []string{"note"},
+		values: [][]any{{nil}, {&note}},
+	}
+	repo := stubRepository{query: func(context.Context, string, ...any) (pgx.Rows, error) {
+		return rows, nil
+	}}
+
+	type nullableNameProjection struct {
+		Name *string `db:"name"`
+	}
+	rows.fields = []string{"name"}
+	got, err := RetrieveAllAs[testModel, nullableNameProjection](context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("RetrieveAllAs returned error: %v", err)
+	}
+	if len(got) != 2 || got[0].Name != nil || got[1].Name == nil || *got[1].Name != note {
+		t.Fatalf("unexpected nullable projections: %#v", got)
+	}
+}
+
+func TestProjectionValidationRejectsInvalidShapes(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func() error
+	}{
+		{
+			name: "empty",
+			run: func() error {
+				type projection struct{}
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+		{
+			name: "untagged",
+			run: func() error {
+				type projection struct{ Name string }
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+		{
+			name: "empty tag",
+			run: func() error {
+				type projection struct {
+					Name string `db:""`
+				}
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+		{
+			name: "ignored",
+			run: func() error {
+				type projection struct {
+					Name string `db:"-"`
+				}
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+		{
+			name: "duplicate",
+			run: func() error {
+				type projection struct {
+					Name  string `db:"name"`
+					Alias string `db:"name"`
+				}
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+		{
+			name: "unknown",
+			run: func() error {
+				type projection struct {
+					Unknown string `db:"unknown"`
+				}
+				_, err := RetrieveOneAs[testModel, projection](context.Background(), stubRepository{}, nil)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.run(); !errors.Is(err, ErrInvalidProjection) {
+				t.Fatalf("expected ErrInvalidProjection, got %v", err)
+			}
+		})
+	}
+}
+
+func TestRetrieveAllAsPropagatesScanAndIterationErrors(t *testing.T) {
+	scanErr := errors.New("scan failed")
+	rows := &stubRows{
+		fields:  []string{"name"},
+		values:  [][]any{{"alice"}},
+		scanErr: scanErr,
+	}
+	repo := stubRepository{query: func(context.Context, string, ...any) (pgx.Rows, error) {
+		return rows, nil
+	}}
+	_, err := RetrieveAllAs[testModel, testProjection](context.Background(), repo, nil)
+	if !errors.Is(err, scanErr) {
+		t.Fatalf("expected scan error, got %v", err)
+	}
+	if !rows.closed {
+		t.Fatal("expected rows to be closed after scan error")
+	}
+
+	iterationErr := errors.New("iteration failed")
+	rows = &stubRows{fields: []string{"name"}, err: iterationErr}
+	repo.query = func(context.Context, string, ...any) (pgx.Rows, error) { return rows, nil }
+	_, err = RetrieveAllAs[testModel, testProjection](context.Background(), repo, nil)
+	if !errors.Is(err, iterationErr) {
+		t.Fatalf("expected iteration error, got %v", err)
+	}
+	if !rows.closed {
+		t.Fatal("expected rows to be closed after iteration error")
+	}
+}
+
+func TestRetrieveOneAsReturnsNotFoundAndTypeMismatch(t *testing.T) {
+	repo := stubRepository{query: func(context.Context, string, ...any) (pgx.Rows, error) {
+		return &stubRows{fields: []string{"name"}}, nil
+	}}
+	_, err := RetrieveOneAs[testModel, testProjection](context.Background(), repo, nil)
+	if !errors.Is(err, ErrRecordNotFound) || !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("expected not found sentinels, got %v", err)
+	}
+
+	type badProjection struct {
+		Name int `db:"name"`
+	}
+	typeErr := errors.New("cannot scan text into int")
+	repo.query = func(context.Context, string, ...any) (pgx.Rows, error) {
+		return &stubRows{
+			fields:  []string{"name"},
+			values:  [][]any{{"alice"}},
+			scanErr: typeErr,
+		}, nil
+	}
+	_, err = RetrieveOneAs[testModel, badProjection](context.Background(), repo, nil)
+	if !errors.Is(err, typeErr) {
+		t.Fatalf("expected type mismatch, got %v", err)
+	}
 }
 func (r *stubRows) Next() bool {
 	if r.err != nil || r.idx >= len(r.values) {

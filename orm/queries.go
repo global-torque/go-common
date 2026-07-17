@@ -19,6 +19,96 @@ type queryModel[T any] interface {
 	Table() string
 }
 
+// RetrieveOneAs fetches one source row into a strict, explicitly tagged
+// projection. Projection columns must exist on the canonical source model.
+func RetrieveOneAs[Source any, Projection any, PSource queryModel[Source]](
+	ctx context.Context,
+	repo Repository,
+	where sq.Sqlizer,
+	suffixes ...sq.Sqlizer,
+) (*Projection, error) {
+	obj := PSource(new(Source))
+	result := new(Projection)
+	fields, err := projectionFields[Source, Projection]()
+	if err != nil {
+		return result, err
+	}
+
+	builder := sq.Select(strings.Join(fields, ",")).From(obj.Table())
+	if where != nil {
+		builder = builder.Where(where)
+	}
+	for _, suffix := range suffixes {
+		if suffix != nil {
+			builder = builder.SuffixExpr(suffix)
+		}
+	}
+
+	sql, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return result, fmt.Errorf("%w: %s, %+v: %w", ErrSQLBuild, where, suffixes, err)
+	}
+
+	rows, err := repo.Query(ctx, sql, args...)
+	if err != nil {
+		return result, fmt.Errorf("%s: %s, %+v: %w", msgRetrieveOne, sql, args, err)
+	}
+
+	value, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[Projection])
+	if err != nil {
+		if errorsIsNoRows(err) {
+			return &value, fmt.Errorf("%s: %s, %+v: %w", msgRetrieveOne, sql, args, ErrRecordNotFound)
+		}
+		return &value, fmt.Errorf("%s: %s, %+v: %w", msgRetrieveOne, sql, args, err)
+	}
+
+	return &value, nil
+}
+
+// RetrieveAllAs fetches source rows into strict, explicitly tagged
+// projections. It returns a non-nil empty slice when no rows match.
+func RetrieveAllAs[Source any, Projection any, PSource queryModel[Source]](
+	ctx context.Context,
+	repo Repository,
+	where sq.Sqlizer,
+	suffixes ...sq.Sqlizer,
+) ([]*Projection, error) {
+	obj := PSource(new(Source))
+	fields, err := projectionFields[Source, Projection]()
+	if err != nil {
+		return nil, err
+	}
+
+	builder := sq.Select(strings.Join(fields, ",")).From(obj.Table())
+	if where != nil {
+		builder = builder.Where(where)
+	}
+	for _, suffix := range suffixes {
+		if suffix != nil {
+			builder = builder.SuffixExpr(suffix)
+		}
+	}
+
+	sql, args, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s, %+v: %w", ErrSQLBuild, where, suffixes, err)
+	}
+
+	rows, err := repo.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s, %+v: %w", msgRetrieveAll, sql, args, err)
+	}
+
+	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Projection])
+	if err != nil {
+		return results, fmt.Errorf("%s: %s, %+v: %w", msgRetrieveAll, sql, args, err)
+	}
+	if results == nil {
+		return []*Projection{}, nil
+	}
+	return results, nil
+}
+
 // RetrieveOne fetches one model by a squirrel predicate and optional suffixes.
 func RetrieveOne[T any, PT queryModel[T]](
 	ctx context.Context,

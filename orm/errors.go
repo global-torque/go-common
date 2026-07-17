@@ -24,6 +24,9 @@ var (
 	ErrNoRowsAffected = errors.New("no rows affected")
 	// ErrIntegrity indicates an impossible persistence result such as multiple primary-key updates.
 	ErrIntegrity = errors.New("orm integrity error")
+	// ErrInvalidProjection indicates that a typed projection does not have a
+	// one-to-one explicit db-tag mapping to columns on its source model.
+	ErrInvalidProjection = errors.New("invalid projection")
 	// ErrTxBegin indicates that a transaction could not be started.
 	ErrTxBegin = errors.New("begin transaction")
 	// ErrTxCallback indicates that a transaction callback returned an error.
