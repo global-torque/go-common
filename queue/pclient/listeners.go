@@ -192,16 +192,35 @@ func (b *Client) ListenEvents(
 	topic string,
 	callback func(ctx context.Context, msg Event) error,
 ) error {
+	return b.ListenEventsWithInvalidRecorder(ctx, subscription, topic, callback, nil)
+}
+
+// InvalidEventRecorder persists validation details for a pull delivery that
+// cannot be decoded as an Event. Returning an error keeps the delivery NACKed
+// and makes the recorder failure visible in logs.
+type InvalidEventRecorder func(ctx context.Context, msg Message, validationErr error) error
+
+// ListenEventsWithInvalidRecorder is ListenEvents with an audit hook for
+// malformed pull deliveries. Malformed deliveries remain NACKed exactly as in
+// ListenEvents, whether recording succeeds or fails.
+func (b *Client) ListenEventsWithInvalidRecorder(
+	ctx context.Context,
+	subscription,
+	topic string,
+	callback func(ctx context.Context, msg Event) error,
+	recorder InvalidEventRecorder,
+) error {
 	sub, err := b.getSubscriptionRetry(ctx, subscription, topic)
 	if err != nil {
 		return err
 	}
-	return b.listenEventGoroutine(ctx, callback, sub)
+	return b.listenEventGoroutine(ctx, callback, recorder, sub)
 }
 
 func (b *Client) listenEventGoroutine(
 	ctx context.Context,
 	callback func(ctx context.Context, msg Event) error,
+	recorder InvalidEventRecorder,
 	sub *gpubsub.Subscriber,
 ) error {
 	// Start consuming messages from the subscription
@@ -211,19 +230,11 @@ func (b *Client) listenEventGoroutine(
 			return
 		}
 
-		event := Event{}
-		if err := json.Unmarshal(msg.Data, &event); err != nil {
-			b.log.Error().Err(err).Interface("data", string(msg.Data)).Msg(ErrUnmarshalPubSub.Error())
-			msg.Nack()
-			return
+		delivery := Message{
+			ID: msg.ID, Data: msg.Data, PublishTime: msg.PublishTime,
+			Attempt: msg.DeliveryAttempt, Attributes: msg.Attributes,
 		}
-		event.ID = msg.ID
-		event.Attempt = msg.DeliveryAttempt
-
-		ctx = SetDefaultEventCtx(ctx, event)
-
-		b.log.Trace().Interface("msg", event).Msgf("received event")
-		err := callback(ctx, event)
+		err := b.handleEventDelivery(ctx, delivery, callback, recorder)
 		if err != nil {
 			b.log.Error().Err(err).Msg(ErrReceiveCallback.Error())
 			msg.Nack()
@@ -235,4 +246,31 @@ func (b *Client) listenEventGoroutine(
 		b.log.Error().Stack().Err(err).Msg(ErrReceiveSubscription.Error())
 	}
 	return err
+}
+
+func (b *Client) handleEventDelivery(
+	ctx context.Context,
+	msg Message,
+	callback func(context.Context, Event) error,
+	recorder InvalidEventRecorder,
+) error {
+	event := Event{}
+	err := json.Unmarshal(msg.Data, &event)
+	if err != nil {
+		b.log.Error().Err(err).Interface("data", string(msg.Data)).Msg(ErrUnmarshalPubSub.Error())
+		if recorder != nil {
+			recordErr := recorder(ctx, msg, err)
+			if recordErr != nil {
+				return fmt.Errorf("record invalid event delivery: %w", recordErr)
+			}
+		}
+		return err
+	}
+
+	event.ID = msg.ID
+	event.Attempt = msg.Attempt
+
+	ctx = SetDefaultEventCtx(ctx, event)
+	b.log.Trace().Interface("msg", event).Msgf("received event")
+	return callback(ctx, event)
 }

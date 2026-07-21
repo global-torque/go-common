@@ -198,6 +198,43 @@ func TestDecodeDomainEventPushRejectsDuplicateAliasConflictsAndUnknownFields(t *
 	}
 }
 
+func TestDecodeDomainEventPushWithTransportReturnsMetadataForInvalidPayload(t *testing.T) {
+	t.Parallel()
+
+	const expected = "projects/test-project/subscriptions/domain-events"
+	payload := domainEventPushPayload(
+		expected,
+		`"messageId":"pubsub-invalid-123","orderingKey":"offer:42"`,
+		`,"deliveryAttempt":3`,
+	)
+	var req PushRequest
+	require.NoError(t, json.Unmarshal(payload, &req))
+	req.Message.Data = bytes.Replace(
+		req.Message.Data,
+		[]byte("6d0aaf23-d5ea-4ed5-b020-60fb9ba72155"),
+		[]byte("not-a-uuid"),
+		1,
+	)
+	payload, err := json.Marshal(req)
+	require.NoError(t, err)
+
+	delivery, transport, err := DecodeDomainEventPushWithTransport(bytes.NewReader(payload), expected)
+	require.ErrorIs(t, err, domainevents.ErrMalformedEvent)
+	require.Empty(t, delivery.Event.ID)
+	require.Equal(t, DomainEventTransport{
+		MessageID: "pubsub-invalid-123", Subscription: expected, Attempt: 3,
+	}, transport)
+
+	wrongSubscription := domainEventPushPayload(
+		"projects/test-project/subscriptions/other",
+		`"messageId":"pubsub-invalid-123","orderingKey":"offer:42"`,
+		`,"deliveryAttempt":3`,
+	)
+	_, transport, err = DecodeDomainEventPushWithTransport(bytes.NewReader(wrongSubscription), expected)
+	require.ErrorIs(t, err, ErrUnexpectedSubscription)
+	require.Empty(t, transport)
+}
+
 func domainEventPushPayload(subscription, messageMetadata, attemptMetadata string) []byte {
 	const event = `{"id":"6d0aaf23-d5ea-4ed5-b020-60fb9ba72155","type":"offer.status.changed.v1","version":1,"source":"postgres-outbox","object":"offer","object_id":"42","field":"status","data":{"status":"legal-accepted"},"time":"2026-07-13T12:34:56Z"}`
 
