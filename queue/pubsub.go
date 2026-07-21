@@ -63,7 +63,10 @@ type PubSubRoute struct {
 	Subscription     string
 	WebhooksListener func(ctx context.Context, msg pclient.Webhook) error
 	EventsListener   func(ctx context.Context, msg pclient.Event) error
-	MsgsListener     func(ctx context.Context, msg pclient.Message) error
+	// InvalidEventsRecorder audits pull deliveries that cannot be decoded as
+	// pclient.Event. The delivery remains NACKed after the hook returns.
+	InvalidEventsRecorder pclient.InvalidEventRecorder
+	MsgsListener          func(ctx context.Context, msg pclient.Message) error
 }
 
 func New(routes []PubSubRoute) (*PubSubListener, error) {
@@ -161,7 +164,9 @@ func (p *PubSubListener) Start(ctx context.Context) error {
 			go func() {
 				defer p.wg.Done()
 				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
-					return p.client.ListenEvents(ctx, br.Subscription, br.Topic, cb)
+					return p.client.ListenEventsWithInvalidRecorder(
+						ctx, br.Subscription, br.Topic, cb, br.InvalidEventsRecorder,
+					)
 				})
 			}()
 		case "messages":
