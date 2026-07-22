@@ -19,6 +19,24 @@ const validPayload = `{
   "time": "2026-07-13T12:34:56.123456Z"
 }`
 
+const validCreatedPayload = `{
+  "id": "80e8e58e-9184-4316-b174-4da418786be2",
+  "type": "offer.created.v1",
+  "version": 1,
+  "source": "postgres-outbox",
+  "object": "offer",
+  "object_id": "42",
+  "field": "created",
+  "data": {
+    "id": 42,
+    "name": "Series A",
+    "status": "new",
+    "entity_id": null,
+    "data": {"tokenization": false}
+  },
+  "time": "2026-07-22T12:34:56.123456Z"
+}`
+
 func TestDecodeV1(t *testing.T) {
 	t.Parallel()
 
@@ -141,6 +159,91 @@ func TestDecodeV1MonitoredEventMatrix(t *testing.T) {
 	}
 }
 
+func TestDecodeV1CreatedEventMatrix(t *testing.T) {
+	t.Parallel()
+
+	for _, object := range []string{
+		"offer",
+		"investment",
+		"profile",
+		"wallet-transaction",
+		"evm-wallet-operation",
+	} {
+		object := object
+		t.Run(object, func(t *testing.T) {
+			t.Parallel()
+
+			payload := createdEventPayload(t, object, map[string]any{
+				"id":         42,
+				"status":     "new",
+				"nullable":   nil,
+				"metadata":   map[string]any{"provider": "sandbox"},
+				"created_at": "2026-07-22T12:34:56.123456Z",
+			})
+			event, err := DecodeV1(payload)
+			require.NoError(t, err)
+			require.True(t, event.IsCreated())
+			require.Equal(t, object+".created.v1", event.Type)
+			require.Equal(t, CreatedField, event.Field)
+			require.Len(t, event.Data, 5)
+			require.JSONEq(t, `42`, string(event.Data["id"]))
+		})
+	}
+}
+
+func TestDecodeV1RejectsMalformedCreatedEvents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		payload string
+	}{
+		{
+			name:    "wrong lifecycle type",
+			payload: replaceJSONField(t, validCreatedPayload, "type", "offer.created.v2"),
+		},
+		{
+			name:    "empty row",
+			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{}),
+		},
+		{
+			name: "missing row id",
+			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
+				"name": "Series A",
+			}),
+		},
+		{
+			name: "mismatched row id",
+			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
+				"id": 43,
+			}),
+		},
+		{
+			name: "invalid row field",
+			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
+				"id":        42,
+				"bad-field": true,
+			}),
+		},
+		{
+			name: "created type on changed shape",
+			payload: replaceJSONField(t,
+				replaceJSONField(t, validPayload, "type", "investment.created.v1"),
+				"field", "status"),
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := DecodeV1([]byte(test.payload))
+			require.ErrorIs(t, err, ErrMalformedEvent)
+		})
+	}
+}
+
 func TestDecodeV1RejectsMalformedContractFields(t *testing.T) {
 	t.Parallel()
 
@@ -244,6 +347,25 @@ func TestDomainEventV1ValidateDelivery(t *testing.T) {
 	}
 }
 
+func TestDomainEventV1CreatedValidateDelivery(t *testing.T) {
+	t.Parallel()
+
+	event, err := DecodeV1([]byte(validCreatedPayload))
+	require.NoError(t, err)
+
+	attributes := map[string]string{
+		"type":      "offer.created.v1",
+		"version":   "1",
+		"object":    "offer",
+		"object_id": "42",
+		"field":     "created",
+	}
+	require.NoError(t, event.ValidateDelivery(attributes, "offer:42"))
+
+	attributes["field"] = "status"
+	require.ErrorIs(t, event.ValidateDelivery(attributes, "offer:42"), ErrMalformedEvent)
+}
+
 func TestParseMode(t *testing.T) {
 	t.Parallel()
 
@@ -339,6 +461,11 @@ func TestDomainEventV1StringValue(t *testing.T) {
 	event.Data[event.Field] = json.RawMessage("42")
 	_, _, err = event.StringValue()
 	require.ErrorIs(t, err, ErrMalformedEvent)
+
+	created, err := DecodeV1([]byte(validCreatedPayload))
+	require.NoError(t, err)
+	_, _, err = created.StringValue()
+	require.ErrorIs(t, err, ErrMalformedEvent)
 }
 
 func eventPayload(t *testing.T, object, field string, value any) []byte {
@@ -354,6 +481,25 @@ func eventPayload(t *testing.T, object, field string, value any) []byte {
 		"field":     field,
 		"data":      map[string]any{field: value},
 		"time":      "2026-07-13T12:34:56.123456Z",
+	}
+	encoded, err := json.Marshal(payload)
+	require.NoError(t, err)
+	return encoded
+}
+
+func createdEventPayload(t *testing.T, object string, data map[string]any) []byte {
+	t.Helper()
+
+	payload := map[string]any{
+		"id":        "80e8e58e-9184-4316-b174-4da418786be2",
+		"type":      object + ".created.v1",
+		"version":   1,
+		"source":    "postgres-outbox",
+		"object":    object,
+		"object_id": "42",
+		"field":     CreatedField,
+		"data":      data,
+		"time":      "2026-07-22T12:34:56.123456Z",
 	}
 	encoded, err := json.Marshal(payload)
 	require.NoError(t, err)

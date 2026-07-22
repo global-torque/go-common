@@ -44,6 +44,28 @@ func TestDecodeDomainEventRequiresTransportIdentity(t *testing.T) {
 	require.True(t, errors.Is(err, domainevents.ErrMalformedEvent))
 }
 
+func TestDecodeDomainEventAcceptsCreatedEventWithCompleteRow(t *testing.T) {
+	t.Parallel()
+
+	req := PushRequest{
+		Message: PushMessage{
+			MessageID:   "pubsub-created-123",
+			OrderingKey: "investment:42",
+			Attributes: map[string]string{
+				"type": "investment.created.v1", "version": "1", "object": "investment",
+				"object_id": "42", "field": "created",
+			},
+			Data: []byte(`{"id":"80e8e58e-9184-4316-b174-4da418786be2","type":"investment.created.v1","version":1,"source":"postgres-outbox","object":"investment","object_id":"42","field":"created","data":{"id":42,"status":"new","funding_status":"new","funding_type":"none","payment_data":{},"entity_id":null},"time":"2026-07-22T12:34:56Z"}`),
+		},
+	}
+
+	delivery, err := DecodeDomainEvent(req)
+	require.NoError(t, err)
+	require.True(t, delivery.Event.IsCreated())
+	require.Equal(t, "pubsub-created-123", delivery.MessageID)
+	require.Len(t, delivery.Event.Data, 6)
+}
+
 func TestDecodeDomainEventPushRequiresExactSubscriptionAndStrictEnvelope(t *testing.T) {
 	t.Parallel()
 

@@ -22,6 +22,8 @@ const (
 	VersionV1 = 1
 	// SourcePostgresOutbox identifies events produced by the PostgreSQL outbox trigger.
 	SourcePostgresOutbox = "postgres-outbox"
+	// CreatedField identifies lifecycle events whose Data contains the complete created row.
+	CreatedField = "created"
 	// ModeOff validates deliveries without evaluating service actions.
 	ModeOff Mode = "off"
 	// ModeShadow evaluates and logs service actions without performing them.
@@ -46,8 +48,10 @@ var (
 )
 
 // DomainEventV1 is the canonical payload emitted by the PostgreSQL outbox.
-// Data contains exactly one key: Field. Its RawMessage value intentionally
-// preserves JSON strings, numbers, booleans, objects, and null transitions.
+// Field-change events contain exactly one Data key matching Field. Created
+// events use Field "created" and Data contains every column from the inserted
+// row. RawMessage values preserve JSON strings, numbers, booleans, objects,
+// and nulls without coercion.
 type DomainEventV1 struct {
 	ID       string                     `json:"id"`
 	Type     string                     `json:"type"`
@@ -125,6 +129,10 @@ func SuppressLegacyFieldEvent(objectName, action string, data map[string]any) (b
 // is returned as ("", false, nil), allowing consumers to ignore nullable
 // transitions without conflating them with malformed scalar values.
 func (event DomainEventV1) StringValue() (string, bool, error) {
+	if event.IsCreated() {
+		return "", false, malformed("StringValue is not valid for created events")
+	}
+
 	raw, ok := event.Data[event.Field]
 	if !ok {
 		return "", false, malformed("data must contain field %q", event.Field)
@@ -142,6 +150,11 @@ func (event DomainEventV1) StringValue() (string, bool, error) {
 	}
 
 	return value, true, nil
+}
+
+// IsCreated reports whether the event represents creation of a complete row.
+func (event DomainEventV1) IsCreated() bool {
+	return event.Field == CreatedField && event.Type == event.Object+".created.v1"
 }
 
 // PositiveIntObjectID parses the numeric primary keys used by the current six
@@ -302,29 +315,15 @@ func (event DomainEventV1) Validate() error {
 		return malformed("field %q is not a lower-case SQL field name", event.Field)
 	}
 
-	expectedType := event.Object + "." + strings.ReplaceAll(event.Field, "_", "-") + ".changed.v1"
-	if event.Type != expectedType {
-		return malformed("type is %q, want %q", event.Type, expectedType)
-	}
-
-	if len(event.Data) != 1 {
-		return malformed("data must contain exactly one field")
-	}
-
-	value, ok := event.Data[event.Field]
-	if !ok {
-		return malformed("data must contain field %q", event.Field)
-	}
-
-	if len(value) == 0 || !json.Valid(value) {
-		return malformed("data.%s must contain a JSON value", event.Field)
-	}
-
 	if event.Time.IsZero() {
 		return malformed("time is required")
 	}
 
-	return nil
+	if event.Field == CreatedField {
+		return event.validateCreated()
+	}
+
+	return event.validateFieldChange()
 }
 
 // ValidateDelivery checks the Pub/Sub attributes and ordering key copied from
@@ -349,6 +348,90 @@ func (event DomainEventV1) ValidateDelivery(attributes map[string]string, orderi
 	}
 
 	return nil
+}
+
+func (event DomainEventV1) validateFieldChange() error {
+	expectedType := event.Object + "." + strings.ReplaceAll(event.Field, "_", "-") + ".changed.v1"
+	if event.Type != expectedType {
+		return malformed("type is %q, want %q", event.Type, expectedType)
+	}
+
+	if len(event.Data) != 1 {
+		return malformed("data must contain exactly one field")
+	}
+
+	value, ok := event.Data[event.Field]
+	if !ok {
+		return malformed("data must contain field %q", event.Field)
+	}
+
+	if len(value) == 0 || !json.Valid(value) {
+		return malformed("data.%s must contain a JSON value", event.Field)
+	}
+
+	return nil
+}
+
+func (event DomainEventV1) validateCreated() error {
+	expectedType := event.Object + ".created.v1"
+	if event.Type != expectedType {
+		return malformed("type is %q, want %q", event.Type, expectedType)
+	}
+
+	if len(event.Data) == 0 {
+		return malformed("data must contain the complete created row")
+	}
+
+	for field, value := range event.Data {
+		if !fieldPattern.MatchString(field) {
+			return malformed("data field %q is not a lower-case SQL field name", field)
+		}
+
+		if len(value) == 0 || !json.Valid(value) {
+			return malformed("data.%s must contain a JSON value", field)
+		}
+	}
+
+	rawID, ok := event.Data["id"]
+	if !ok {
+		return malformed("created event data must contain id")
+	}
+
+	rowID, err := createdRowID(rawID)
+	if err != nil {
+		return err
+	}
+
+	if rowID != event.ObjectID {
+		return malformed("data.id is %q, want object_id %q", rowID, event.ObjectID)
+	}
+
+	return nil
+}
+
+func createdRowID(raw json.RawMessage) (string, error) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+
+	var value any
+
+	err := decoder.Decode(&value)
+	if err != nil {
+		return "", malformed("data.id must be a JSON string or number")
+	}
+
+	switch typed := value.(type) {
+	case string:
+		if strings.TrimSpace(typed) == "" {
+			return "", malformed("data.id must not be empty")
+		}
+
+		return typed, nil
+	case json.Number:
+		return typed.String(), nil
+	default:
+		return "", malformed("data.id must be a JSON string or number")
+	}
 }
 
 func ensureJSONEOF(decoder *json.Decoder) error {
