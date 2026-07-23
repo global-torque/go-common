@@ -22,8 +22,10 @@ const (
 	VersionV1 = 1
 	// SourcePostgresOutbox identifies events produced by the PostgreSQL outbox trigger.
 	SourcePostgresOutbox = "postgres-outbox"
-	// CreatedField identifies lifecycle events whose Data contains the complete created row.
+	// CreatedField identifies lifecycle events whose Data contains only the created row identity.
 	CreatedField = "created"
+	// DeletedField identifies lifecycle events whose Data contains the immutable deletion snapshot.
+	DeletedField = "deleted"
 	// ModeOff validates deliveries without evaluating service actions.
 	ModeOff Mode = "off"
 	// ModeShadow evaluates and logs service actions without performing them.
@@ -49,9 +51,11 @@ var (
 
 // DomainEventV1 is the canonical payload emitted by the PostgreSQL outbox.
 // Field-change events contain exactly one Data key matching Field. Created
-// events use Field "created" and Data contains every column from the inserted
-// row. RawMessage values preserve JSON strings, numbers, booleans, objects,
-// and nulls without coercion.
+// events use Field "created" and contain only data.id. Deleted events use Field
+// "deleted" and contain data.id plus any explicitly allowlisted immutable
+// identifiers required after the source row is gone. RawMessage values
+// preserve JSON strings, numbers, booleans, objects, and nulls without
+// coercion.
 type DomainEventV1 struct {
 	ID       string                     `json:"id"`
 	Type     string                     `json:"type"`
@@ -89,8 +93,7 @@ func EnvironmentMode() (Mode, error) {
 
 // SuppressLegacyFieldEvent reports whether an old field-change delivery is
 // owned by the transactional outbox after this worker moves to active mode.
-// Insert/delete and unmonitored-field events intentionally remain on the
-// legacy path during the incremental migration.
+// Unmonitored field events remain outside the outbox contract.
 func SuppressLegacyFieldEvent(objectName, action string, data map[string]any) (bool, error) {
 	mode, err := EnvironmentMode()
 	if err != nil {
@@ -129,8 +132,8 @@ func SuppressLegacyFieldEvent(objectName, action string, data map[string]any) (b
 // is returned as ("", false, nil), allowing consumers to ignore nullable
 // transitions without conflating them with malformed scalar values.
 func (event DomainEventV1) StringValue() (string, bool, error) {
-	if event.IsCreated() {
-		return "", false, malformed("StringValue is not valid for created events")
+	if event.IsCreated() || event.IsDeleted() {
+		return "", false, malformed("StringValue is not valid for lifecycle events")
 	}
 
 	raw, ok := event.Data[event.Field]
@@ -152,12 +155,22 @@ func (event DomainEventV1) StringValue() (string, bool, error) {
 	return value, true, nil
 }
 
-// IsCreated reports whether the event represents creation of a complete row.
+// IsCreated reports whether the event represents creation of a row.
 func (event DomainEventV1) IsCreated() bool {
 	return event.Field == CreatedField && event.Type == event.Object+".created.v1"
 }
 
-// PositiveIntObjectID parses the numeric primary keys used by the current six
+// IsDeleted reports whether the event represents deletion of a row.
+func (event DomainEventV1) IsDeleted() bool {
+	return event.Field == DeletedField && event.Type == event.Object+".deleted.v1"
+}
+
+// IsLifecycle reports whether the event represents row creation or deletion.
+func (event DomainEventV1) IsLifecycle() bool {
+	return event.Field == CreatedField || event.Field == DeletedField
+}
+
+// PositiveIntObjectID parses the numeric primary keys used by the current
 // workers. It returns a contract error for zero and negative IDs as well as
 // non-numeric values, so known events cannot be silently acknowledged.
 func (event DomainEventV1) PositiveIntObjectID() (int, error) {
@@ -319,11 +332,14 @@ func (event DomainEventV1) Validate() error {
 		return malformed("time is required")
 	}
 
-	if event.Field == CreatedField {
+	switch event.Field {
+	case CreatedField:
 		return event.validateCreated()
+	case DeletedField:
+		return event.validateDeleted()
+	default:
+		return event.validateFieldChange()
 	}
-
-	return event.validateFieldChange()
 }
 
 // ValidateDelivery checks the Pub/Sub attributes and ordering key copied from
@@ -378,8 +394,21 @@ func (event DomainEventV1) validateCreated() error {
 		return malformed("type is %q, want %q", event.Type, expectedType)
 	}
 
+	if len(event.Data) != 1 {
+		return malformed("created event data must contain exactly id")
+	}
+
+	return event.validateLifecycleID()
+}
+
+func (event DomainEventV1) validateDeleted() error {
+	expectedType := event.Object + ".deleted.v1"
+	if event.Type != expectedType {
+		return malformed("type is %q, want %q", event.Type, expectedType)
+	}
+
 	if len(event.Data) == 0 {
-		return malformed("data must contain the complete created row")
+		return malformed("deleted event data must contain id")
 	}
 
 	for field, value := range event.Data {
@@ -392,12 +421,16 @@ func (event DomainEventV1) validateCreated() error {
 		}
 	}
 
+	return event.validateLifecycleID()
+}
+
+func (event DomainEventV1) validateLifecycleID() error {
 	rawID, ok := event.Data["id"]
 	if !ok {
-		return malformed("created event data must contain id")
+		return malformed("%s event data must contain id", event.Field)
 	}
 
-	rowID, err := createdRowID(rawID)
+	rowID, err := lifecycleRowID(rawID)
 	if err != nil {
 		return err
 	}
@@ -409,7 +442,7 @@ func (event DomainEventV1) validateCreated() error {
 	return nil
 }
 
-func createdRowID(raw json.RawMessage) (string, error) {
+func lifecycleRowID(raw json.RawMessage) (string, error) {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
 

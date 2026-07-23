@@ -44,7 +44,7 @@ func TestDecodeDomainEventRequiresTransportIdentity(t *testing.T) {
 	require.True(t, errors.Is(err, domainevents.ErrMalformedEvent))
 }
 
-func TestDecodeDomainEventAcceptsCreatedEventWithCompleteRow(t *testing.T) {
+func TestDecodeDomainEventAcceptsIdentifierOnlyCreatedEvent(t *testing.T) {
 	t.Parallel()
 
 	req := PushRequest{
@@ -55,7 +55,7 @@ func TestDecodeDomainEventAcceptsCreatedEventWithCompleteRow(t *testing.T) {
 				"type": "investment.created.v1", "version": "1", "object": "investment",
 				"object_id": "42", "field": "created",
 			},
-			Data: []byte(`{"id":"80e8e58e-9184-4316-b174-4da418786be2","type":"investment.created.v1","version":1,"source":"postgres-outbox","object":"investment","object_id":"42","field":"created","data":{"id":42,"status":"new","funding_status":"new","funding_type":"none","payment_data":{},"entity_id":null},"time":"2026-07-22T12:34:56Z"}`),
+			Data: []byte(`{"id":"80e8e58e-9184-4316-b174-4da418786be2","type":"investment.created.v1","version":1,"source":"postgres-outbox","object":"investment","object_id":"42","field":"created","data":{"id":42},"time":"2026-07-22T12:34:56Z"}`),
 		},
 	}
 
@@ -63,7 +63,7 @@ func TestDecodeDomainEventAcceptsCreatedEventWithCompleteRow(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, delivery.Event.IsCreated())
 	require.Equal(t, "pubsub-created-123", delivery.MessageID)
-	require.Len(t, delivery.Event.Data, 6)
+	require.Len(t, delivery.Event.Data, 1)
 }
 
 func TestDecodeDomainEventPushRequiresExactSubscriptionAndStrictEnvelope(t *testing.T) {

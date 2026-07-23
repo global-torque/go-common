@@ -27,14 +27,20 @@ const validCreatedPayload = `{
   "object": "offer",
   "object_id": "42",
   "field": "created",
-  "data": {
-    "id": 42,
-    "name": "Series A",
-    "status": "new",
-    "entity_id": null,
-    "data": {"tokenization": false}
-  },
+  "data": {"id": 42},
   "time": "2026-07-22T12:34:56.123456Z"
+}`
+
+const validDeletedPayload = `{
+  "id": "b6091e69-028a-42e2-9e6e-daec147bcfaa",
+  "type": "funding-source.deleted.v1",
+  "version": 1,
+  "source": "postgres-outbox",
+  "object": "funding-source",
+  "object_id": "42",
+  "field": "deleted",
+  "data": {"id": 42, "wallet_id": 7, "user_id": 3},
+  "time": "2026-07-23T12:34:56.123456Z"
 }`
 
 func TestDecodeV1(t *testing.T) {
@@ -168,24 +174,22 @@ func TestDecodeV1CreatedEventMatrix(t *testing.T) {
 		"profile",
 		"wallet-transaction",
 		"evm-wallet-operation",
+		"wallet",
+		"funding-source",
+		"user",
+		"distribution",
 	} {
 		object := object
 		t.Run(object, func(t *testing.T) {
 			t.Parallel()
 
-			payload := createdEventPayload(t, object, map[string]any{
-				"id":         42,
-				"status":     "new",
-				"nullable":   nil,
-				"metadata":   map[string]any{"provider": "sandbox"},
-				"created_at": "2026-07-22T12:34:56.123456Z",
-			})
+			payload := createdEventPayload(t, object, map[string]any{"id": 42})
 			event, err := DecodeV1(payload)
 			require.NoError(t, err)
 			require.True(t, event.IsCreated())
 			require.Equal(t, object+".created.v1", event.Type)
 			require.Equal(t, CreatedField, event.Field)
-			require.Len(t, event.Data, 5)
+			require.Len(t, event.Data, 1)
 			require.JSONEq(t, `42`, string(event.Data["id"]))
 		})
 	}
@@ -203,11 +207,11 @@ func TestDecodeV1RejectsMalformedCreatedEvents(t *testing.T) {
 			payload: replaceJSONField(t, validCreatedPayload, "type", "offer.created.v2"),
 		},
 		{
-			name:    "empty row",
+			name:    "empty identity",
 			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{}),
 		},
 		{
-			name: "missing row id",
+			name: "missing identity",
 			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
 				"name": "Series A",
 			}),
@@ -219,16 +223,88 @@ func TestDecodeV1RejectsMalformedCreatedEvents(t *testing.T) {
 			}),
 		},
 		{
-			name: "invalid row field",
+			name: "unapproved complete-row field",
 			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
-				"id":        42,
-				"bad-field": true,
+				"id":   42,
+				"name": "Series A",
 			}),
 		},
 		{
 			name: "created type on changed shape",
 			payload: replaceJSONField(t,
 				replaceJSONField(t, validPayload, "type", "investment.created.v1"),
+				"field", "status"),
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := DecodeV1([]byte(test.payload))
+			require.ErrorIs(t, err, ErrMalformedEvent)
+		})
+	}
+}
+
+func TestDecodeV1DeletedEvent(t *testing.T) {
+	t.Parallel()
+
+	event, err := DecodeV1([]byte(validDeletedPayload))
+	require.NoError(t, err)
+	require.True(t, event.IsDeleted())
+	require.True(t, event.IsLifecycle())
+	require.False(t, event.IsCreated())
+	require.Equal(t, "funding-source.deleted.v1", event.Type)
+	require.Len(t, event.Data, 3)
+	require.JSONEq(t, `42`, string(event.Data["id"]))
+	require.JSONEq(t, `7`, string(event.Data["wallet_id"]))
+	require.JSONEq(t, `3`, string(event.Data["user_id"]))
+}
+
+func TestDecodeV1RejectsMalformedDeletedEvents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		payload string
+	}{
+		{
+			name:    "wrong lifecycle type",
+			payload: replaceJSONField(t, validDeletedPayload, "type", "funding-source.created.v1"),
+		},
+		{
+			name:    "empty snapshot",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{}),
+		},
+		{
+			name: "missing row id",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
+				"wallet_id": 7,
+				"user_id":   3,
+			}),
+		},
+		{
+			name: "mismatched row id",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
+				"id":        43,
+				"wallet_id": 7,
+				"user_id":   3,
+			}),
+		},
+		{
+			name: "invalid snapshot field",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
+				"id":        42,
+				"wallet-id": 7,
+				"user_id":   3,
+			}),
+		},
+		{
+			name: "deleted type on changed shape",
+			payload: replaceJSONField(t,
+				replaceJSONField(t, validPayload, "type", "investment.deleted.v1"),
 				"field", "status"),
 		},
 	}
@@ -366,6 +442,25 @@ func TestDomainEventV1CreatedValidateDelivery(t *testing.T) {
 	require.ErrorIs(t, event.ValidateDelivery(attributes, "offer:42"), ErrMalformedEvent)
 }
 
+func TestDomainEventV1DeletedValidateDelivery(t *testing.T) {
+	t.Parallel()
+
+	event, err := DecodeV1([]byte(validDeletedPayload))
+	require.NoError(t, err)
+
+	attributes := map[string]string{
+		"type":      "funding-source.deleted.v1",
+		"version":   "1",
+		"object":    "funding-source",
+		"object_id": "42",
+		"field":     "deleted",
+	}
+	require.NoError(t, event.ValidateDelivery(attributes, "funding-source:42"))
+
+	attributes["field"] = "created"
+	require.ErrorIs(t, event.ValidateDelivery(attributes, "funding-source:42"), ErrMalformedEvent)
+}
+
 func TestParseMode(t *testing.T) {
 	t.Parallel()
 
@@ -465,6 +560,11 @@ func TestDomainEventV1StringValue(t *testing.T) {
 	created, err := DecodeV1([]byte(validCreatedPayload))
 	require.NoError(t, err)
 	_, _, err = created.StringValue()
+	require.ErrorIs(t, err, ErrMalformedEvent)
+
+	deleted, err := DecodeV1([]byte(validDeletedPayload))
+	require.NoError(t, err)
+	_, _, err = deleted.StringValue()
 	require.ErrorIs(t, err, ErrMalformedEvent)
 }
 
