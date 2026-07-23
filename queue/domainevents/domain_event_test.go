@@ -294,6 +294,28 @@ func TestDecodeV1RejectsMalformedDeletedEvents(t *testing.T) {
 			}),
 		},
 		{
+			name: "missing wallet id",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
+				"id":      42,
+				"user_id": 3,
+			}),
+		},
+		{
+			name: "unexpected snapshot field",
+			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
+				"id":          42,
+				"wallet_id":   7,
+				"user_id":     3,
+				"provider_id": "secret",
+			}),
+		},
+		{
+			name: "undefined deleted object",
+			payload: replaceJSONField(t,
+				replaceJSONField(t, validDeletedPayload, "type", "investment.deleted.v1"),
+				"object", "investment"),
+		},
+		{
 			name: "invalid snapshot field",
 			payload: replaceJSONField(t, validDeletedPayload, "data", map[string]any{
 				"id":        42,

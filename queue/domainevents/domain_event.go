@@ -407,13 +407,22 @@ func (event DomainEventV1) validateDeleted() error {
 		return malformed("type is %q, want %q", event.Type, expectedType)
 	}
 
-	if len(event.Data) == 0 {
-		return malformed("deleted event data must contain id")
+	if event.Object != "funding-source" {
+		return malformed("deleted lifecycle events are not defined for object %q", event.Object)
+	}
+
+	requiredFields := map[string]struct{}{
+		"id":        {},
+		"wallet_id": {},
+		"user_id":   {},
+	}
+	if len(event.Data) != len(requiredFields) {
+		return malformed("funding-source deleted event data must contain exactly id, wallet_id, and user_id")
 	}
 
 	for field, value := range event.Data {
-		if !fieldPattern.MatchString(field) {
-			return malformed("data field %q is not a lower-case SQL field name", field)
+		if _, allowed := requiredFields[field]; !allowed {
+			return malformed("data field %q is not allowed for funding-source deletion", field)
 		}
 
 		if len(value) == 0 || !json.Valid(value) {
