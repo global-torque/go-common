@@ -1,5 +1,13 @@
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/global-torque/go-common/configurator/v2 v2.0.1 h1:tZAyjrRd+l/rLjQeCDQ8cIt0h08s23HTkc+jmtWdARs=
+github.com/global-torque/go-common/configurator/v2 v2.0.1/go.mod h1:1guUksnyWFV8QN+3vakUC8s995H8VgRJ8CDIZk81Vq0=
+github.com/global-torque/go-common/context/v2 v2.0.1 h1:SXk6ywqPfuhns5ltGabNqJVf4rFZuTjYLcikxjfMoTw=
+github.com/global-torque/go-common/context/v2 v2.0.1/go.mod h1:0ph3Uhga88Uf0JPom6mkhbUdXu+WrHi0zIGHVrms7ps=
+github.com/global-torque/go-common/httputils/v2 v2.0.1 h1:tVfXYdpEwRIXjAc48LlgI5CKdQUwgp4BU70gnA8t818=
+github.com/global-torque/go-common/httputils/v2 v2.0.1/go.mod h1:c8P6BPvpbu8xfazgbMs711l6KQ4GJC9ElOQ5ip4LDLU=
+github.com/global-torque/go-common/tests/v2 v2.0.1 h1:k/YdOw+RO/TTd4zO3mbPs/R8pH7dQvPkuQ+ThbFzI68=
+github.com/global-torque/go-common/tests/v2 v2.0.1/go.mod h1:zUw6yAXrxRdSRZT0jtIVeVcTuuNOUvkPC7gxKnq8euo=
 github.com/jinzhu/copier v0.4.0 h1:w3ciUoD19shMCRargcpm0cm91ytaBhDvuRpz1ODO/U8=
 github.com/jinzhu/copier v0.4.0/go.mod h1:DfbEm0FYsaqBcKcFuvmOZb218JkPGtvSHsKg8S8hyyg=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=

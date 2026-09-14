@@ -9,6 +9,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type testModel struct {
@@ -323,6 +324,7 @@ func (r *stubRows) Scan(dest ...any) error {
 func (r *stubRows) Values() ([]any, error) { return r.values[r.idx-1], nil }
 func (r *stubRows) RawValues() [][]byte    { return nil }
 func (r *stubRows) Conn() *pgx.Conn        { return nil }
+func (r *stubRows) TypeMap() *pgtype.Map   { return pgtype.NewMap() }
 
 type stubRow struct {
 	values []any
