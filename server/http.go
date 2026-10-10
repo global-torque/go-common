@@ -29,6 +29,15 @@ import (
 
 const pkgName = "http_server"
 
+var defaultCORSAllowedHeaders = []string{
+	echo.HeaderAuthorization,
+	echo.HeaderContentType,
+	echo.HeaderXRequestedWith,
+	echo.HeaderXRequestID,
+	echo.HeaderVary,
+	"X-PINGOTHER",
+}
+
 type HTTPServer struct {
 	Echo       *echo.Echo
 	log        logger.Logger
@@ -105,14 +114,7 @@ func NewServer() (*HTTPServer, error) {
 				http.MethodDelete,
 				http.MethodPatch,
 			},
-			AllowHeaders: []string{
-				echo.HeaderAuthorization,
-				echo.HeaderContentType,
-				echo.HeaderXRequestedWith,
-				echo.HeaderXRequestID,
-				echo.HeaderVary,
-				"X-PINGOTHER",
-			},
+			AllowHeaders: corsAllowedHeaders(cfg.CORSAllowHeaders),
 		}),
 	)
 
@@ -139,6 +141,19 @@ func NewServer() (*HTTPServer, error) {
 	newSrv.Echo.HTTPErrorHandler = newSrv.httpErrorHandler
 
 	return newSrv, nil
+}
+
+func corsAllowedHeaders(configured string) []string {
+	headers := make([]string, 0)
+	for _, header := range strings.Split(configured, ",") {
+		if header = strings.TrimSpace(header); header != "" {
+			headers = append(headers, header)
+		}
+	}
+	if len(headers) == 0 {
+		return defaultCORSAllowedHeaders
+	}
+	return headers
 }
 
 // MustNewServer is NewServer with fatal-on-error semantics for app main packages.
