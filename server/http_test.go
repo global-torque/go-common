@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewServerCORSAllowsAPIKeyHeader(t *testing.T) {
+func TestNewServerCORSAllowsConfiguredHeader(t *testing.T) {
 	t.Setenv("ENV_FILE", "")
 	t.Setenv("HOST", "127.0.0.1")
 	t.Setenv("PORT", "8080")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://admin.example.com")
+	t.Setenv("CORS_ALLOW_HEADERS", "Authorization, Content-Type, Idempotency-Key")
 
 	server, err := NewServer()
 	require.NoError(t, err)
@@ -25,14 +26,14 @@ func TestNewServerCORSAllowsAPIKeyHeader(t *testing.T) {
 	request := httptest.NewRequest(http.MethodOptions, "/resource", nil)
 	request.Header.Set(echo.HeaderOrigin, "https://admin.example.com")
 	request.Header.Set(echo.HeaderAccessControlRequestMethod, http.MethodGet)
-	request.Header.Set(echo.HeaderAccessControlRequestHeaders, "X-API-Key")
+	request.Header.Set(echo.HeaderAccessControlRequestHeaders, "Idempotency-Key")
 	response := httptest.NewRecorder()
 
 	server.Echo.ServeHTTP(response, request)
 
 	require.Equal(t, http.StatusNoContent, response.Code)
 	require.Equal(t, "https://admin.example.com", response.Header().Get(echo.HeaderAccessControlAllowOrigin))
-	require.Contains(t, response.Header().Get(echo.HeaderAccessControlAllowHeaders), "X-API-Key")
+	require.Contains(t, response.Header().Get(echo.HeaderAccessControlAllowHeaders), "Idempotency-Key")
 }
 
 /*

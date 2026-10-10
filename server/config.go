@@ -5,6 +5,7 @@ type Config struct {
 	Host                     string `required:"true"`
 	Port                     string `required:"true"`
 	CORSAllowedOrigins       string `split_words:"true"`
+	CORSAllowHeaders         string `split_words:"true"`
 	ReadTimeoutSeconds       int    `default:"15" split_words:"true"`
 	ReadHeaderTimeoutSeconds int    `default:"5" split_words:"true"`
 	WriteTimeoutSeconds      int    `default:"30" split_words:"true"`
