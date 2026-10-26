@@ -8,8 +8,8 @@ publishing, and pull listeners.
 ## Use For
 
 - Creating and deleting Pub/Sub topics and subscriptions.
-- Publishing raw data, events, or webhooks.
-- Listening to raw messages, event DTOs, or webhook DTOs.
+- Publishing raw data or webhooks.
+- Listening to raw messages or webhook DTOs.
 - Building default logging context from received Pub/Sub data.
 
 ## Do Not Use For
@@ -30,15 +30,12 @@ publishing, and pull listeners.
 - `SubscriptionExist`
 - `Publish`
 - `PublishToTopic`
-- `PublishEvent`
 - `PublishWebhook`
 - `ListenRawMsgs`
-- `ListenEvents`
 - `ListenWebhooks`
 - `Message`
 - `Event`
 - `Webhook`
-- `SetDefaultEventCtx`
 - `SetDefaultWebhookCtx`
 
 ## Configuration
@@ -83,7 +80,7 @@ The package tests skip when the emulator is not configured or reachable.
 
 ## Gotchas
 
-- `PublishEvent` and `PublishWebhook` validate DTOs with HTTP 412 on validation
+- `PublishWebhook` validates DTOs with HTTP 412 on validation
   errors.
 - `CreateSubscription` enables exactly-once delivery and a 5 to 10 minute retry
   policy.
@@ -91,3 +88,6 @@ The package tests skip when the emulator is not configured or reachable.
 - `Message.OrderingKey` is populated for pull deliveries as of
   `queue/v2.0.10`.
 - `SetDefaultWebhookCtx` reads request ID and IP from webhook headers.
+
+Business facts use `queue/businessevents` and a caller-owned database transaction.
+`Event` remains the compatible envelope DTO; there is no direct application-event publisher or listener.

@@ -217,20 +217,6 @@ func waitListenerStopped(t *testing.T, errCh <-chan error) {
 	}
 }
 
-func testEventPayload() pclient.Event {
-	return pclient.Event{
-		Action:     pclient.PostUpdate,
-		Sender:     "go-common-test",
-		ObjectID:   123,
-		ObjectName: "message",
-		RequestID:  "request-id",
-		IPAddress:  "127.0.0.1",
-		Data: map[string]any{
-			"message": 123,
-		},
-	}
-}
-
 func TestPublish(t *testing.T) {
 	ctx, cancel := newPubsubTestContext(t)
 	defer cancel()
@@ -334,28 +320,28 @@ func TestListenAck(t *testing.T) {
 		})
 
 		go func() {
-			errCh <- pubsubClient.ListenEvents(listenCtx, subscription, topic, func(ctx context.Context, msg pclient.Event) error {
+			errCh <- pubsubClient.ListenRawMsgs(listenCtx, subscription, topic, func(ctx context.Context, msg pclient.Message) error {
 				receivedCounter.Add(1)
-				if msg.ID == "" || msg.Action == "" || msg.ObjectID == 0 || msg.ObjectName == "" {
-					return fmt.Errorf("event is empty, its not correct")
+				if msg.ID == "" || len(msg.Data) == 0 {
+					return fmt.Errorf("message is empty")
 				}
 				return nil
 			})
 		}()
 
 		opCtx, opCancel := pubsubOperationContext(ctx)
-		_, err := pubsubClient.PublishEvent(opCtx, topic, testEventPayload())
+		_, err := pubsubClient.Publish(opCtx, topic, map[string]int{"message": 123}, nil)
 		opCancel()
-		mustNoError(t, err, "publish first event")
+		mustNoError(t, err, "publish first message")
 
 		opCtx, opCancel = pubsubOperationContext(ctx)
-		_, err = pubsubClient.PublishEvent(opCtx, topic, testEventPayload())
+		_, err = pubsubClient.Publish(opCtx, topic, map[string]int{"message": 123}, nil)
 		opCancel()
-		mustNoError(t, err, "publish second event")
+		mustNoError(t, err, "publish second message")
 
 		waitUntil(t, 8*time.Second, func() bool {
 			return receivedCounter.Load() >= 2
-		}, fmt.Sprintf("expected 2 acknowledged events, got %d", receivedCounter.Load()))
+		}, fmt.Sprintf("expected 2 acknowledged messages, got %d", receivedCounter.Load()))
 
 		stopListen()
 		waitListenerStopped(t, errCh)
@@ -388,10 +374,10 @@ func TestReconnectToNonExistTopic(t *testing.T) {
 		})
 
 		go func() {
-			errCh <- pubsubClient.ListenEvents(listenCtx, subscription, topic, func(ctx context.Context, msg pclient.Event) error {
+			errCh <- pubsubClient.ListenRawMsgs(listenCtx, subscription, topic, func(ctx context.Context, msg pclient.Message) error {
 				receivedCounter.Add(1)
-				if msg.ID == "" || msg.Action == "" || msg.ObjectID == 0 || msg.ObjectName == "" {
-					return fmt.Errorf("event is empty, its not correct")
+				if msg.ID == "" || len(msg.Data) == 0 {
+					return fmt.Errorf("message is empty")
 				}
 				return nil
 			})
@@ -409,18 +395,18 @@ func TestReconnectToNonExistTopic(t *testing.T) {
 		createPubsubSubscription(t, ctx, pubsubClient, subscription, topic)
 
 		opCtx, opCancel := pubsubOperationContext(ctx)
-		_, err := pubsubClient.PublishEvent(opCtx, topic, testEventPayload())
+		_, err := pubsubClient.Publish(opCtx, topic, map[string]int{"message": 123}, nil)
 		opCancel()
-		mustNoError(t, err, "publish first event")
+		mustNoError(t, err, "publish first message")
 
 		opCtx, opCancel = pubsubOperationContext(ctx)
-		_, err = pubsubClient.PublishEvent(opCtx, topic, testEventPayload())
+		_, err = pubsubClient.Publish(opCtx, topic, map[string]int{"message": 123}, nil)
 		opCancel()
-		mustNoError(t, err, "publish second event")
+		mustNoError(t, err, "publish second message")
 
 		waitUntil(t, 8*time.Second, func() bool {
 			return receivedCounter.Load() >= 2
-		}, fmt.Sprintf("expected 2 events after reconnect, got %d", receivedCounter.Load()))
+		}, fmt.Sprintf("expected 2 messages after reconnect, got %d", receivedCounter.Load()))
 
 		stopListen()
 		waitListenerStopped(t, errCh)

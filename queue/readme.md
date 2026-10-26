@@ -3,13 +3,13 @@
 Import path: `github.com/global-torque/go-common/queue/v2`
 
 Route-based Google Pub/Sub pull listener for workers. It wraps
-`queue/pclient` listeners and can optionally deduplicate event and webhook
+`queue/pclient` listeners and can optionally deduplicate webhook
 deliveries.
 
 ## Use For
 
 - Long-running pull-subscription workers.
-- Routing Pub/Sub messages by route name to webhook, event, or raw-message
+- Routing Pub/Sub messages by route name to webhook or raw-message
   callbacks.
 - Message-level deduplication backed by service-owned storage.
 
@@ -59,12 +59,11 @@ return listener.Start(ctx)
 Valid route names are exactly:
 
 - `webhooks`
-- `events`
 - `messages`
 
 ## Deduplication
 
-`NewWithDeduper` wraps event and webhook callbacks with:
+`NewWithDeduper` wraps webhook callbacks with:
 
 1. `Claim`
 2. callback execution

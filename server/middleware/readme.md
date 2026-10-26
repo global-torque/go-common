@@ -12,6 +12,7 @@ and request/response body dumping.
 - Identity-header checks for internal routes.
 - JWT payload parsing and context storage.
 - Body dump debugging.
+- Atomic database requests using the shared database adapter.
 
 ## Do Not Use For
 
@@ -35,6 +36,7 @@ and request/response body dumping.
 - `ExtractTokenFromString`
 - `FileAndHealtchCheckSkipper`
 - `BodyDumpHandler`
+- `NewAtomic`, `TransactionStarter`, `AtomicConfig`
 
 ## Configuration
 
@@ -65,6 +67,9 @@ route.Route{
 
 Use Echo `httptest` contexts. Existing tests show `SetIPAddress` and
 `SetLogger` assertions.
+
+See [Atomic database requests](atomic.md) for installation, limitations, and
+real PostgreSQL verification.
 
 ## Gotchas
 

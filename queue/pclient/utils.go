@@ -11,33 +11,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func SetDefaultEventCtx(ctx context.Context, event Event) context.Context {
-	ctx = keys.SetCtxValue(ctx, keys.RequestID, event.RequestID)
-	ctx = keys.SetCtxValue(ctx, keys.IPAddress, event.IPAddress)
-	ctx = keys.SetCtxValue(ctx, keys.MSGID, event.ID)
-
-	logInfo := logger.ServiceContext{
-		Service: verser.GetService(),
-		Version: verser.GetVersion(),
-		SourceReference: &logger.SourceReference{
-			Repository: verser.GetRepository(),
-			RevisionID: verser.GetRevisionID(),
-		},
-		MSGID: event.ID,
-	}
-
-	// create logger with serviceContext
-	log := logger.NewComponentLogger(ctx, "event")
-	log.UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Interface("serviceContext", logInfo)
-	})
-	// add logger to context
-	ctx = log.WithContext(ctx)
-	// ctx = keys.SetCtxValue(ctx, keys.LogInfo, logInfo)
-
-	return ctx
-}
-
 func SetDefaultWebhookCtx(ctx context.Context, webhook Webhook) context.Context {
 	headers := http.Header(webhook.Headers)
 

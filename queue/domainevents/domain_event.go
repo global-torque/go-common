@@ -22,7 +22,7 @@ const (
 	VersionV1 = 1
 	// SourcePostgresOutbox identifies events produced by the PostgreSQL outbox trigger.
 	SourcePostgresOutbox = "postgres-outbox"
-	// CreatedField identifies lifecycle events whose Data contains only the created row identity.
+	// CreatedField identifies lifecycle events whose Data contains the created row identity and insertion-time fields.
 	CreatedField = "created"
 	// DeletedField identifies lifecycle events whose Data contains the immutable deletion snapshot.
 	DeletedField = "deleted"
@@ -32,8 +32,6 @@ const (
 	ModeShadow Mode = "shadow"
 	// ModeActive evaluates and performs service actions.
 	ModeActive Mode = "active"
-
-	statusField = "status"
 )
 
 // Mode controls a consumer's migration behavior.
@@ -52,7 +50,7 @@ var (
 
 // DomainEventV1 is the canonical payload emitted by the PostgreSQL outbox.
 // Field-change events contain exactly one Data key matching Field. Created
-// events use Field "created" and contain only data.id. Deleted events use Field
+// events use Field "created" and contain data.id and optional insertion-time fields. Deleted events use Field
 // "deleted" and contain data.id plus any explicitly allowlisted immutable
 // identifiers required after the source row is gone. RawMessage values
 // preserve JSON strings, numbers, booleans, objects, and nulls without
@@ -90,43 +88,6 @@ func ParseMode(value string) (Mode, error) {
 // contract DOMAIN_EVENTS_MODE=off|shadow|active.
 func EnvironmentMode() (Mode, error) {
 	return ParseMode(os.Getenv("DOMAIN_EVENTS_MODE"))
-}
-
-// SuppressLegacyFieldEvent reports whether an old field-change delivery is
-// owned by the transactional outbox after this worker moves to active mode.
-// Unmonitored field events remain outside the outbox contract.
-func SuppressLegacyFieldEvent(objectName, action string, data map[string]any) (bool, error) {
-	mode, err := EnvironmentMode()
-	if err != nil {
-		return false, err
-	}
-
-	if mode != ModeActive || action != "post_update" {
-		return false, nil
-	}
-	// "publish" is an escrow command, not the persisted offer status
-	// ("published"). Synthetic commands remain on the legacy topic.
-	if objectName == "offer" {
-		if status, ok := data[statusField].(string); ok && status == "publish" {
-			return false, nil
-		}
-	}
-
-	monitoredFields := map[string][]string{
-		"offer":                {statusField, "subscribed_shares", "confirmed_shares"},
-		"profile":              {"kyc_status", "accreditation_status"},
-		"investment":           {statusField, "funding_status", "funding_type"},
-		"evm_wallet_operation": {statusField},
-		"transaction":          {statusField},
-		"wallet_transaction":   {statusField},
-	}
-	for _, field := range monitoredFields[objectName] {
-		if _, present := data[field]; present {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 // StringValue returns the changed value when it is a JSON string. A JSON null
@@ -408,8 +369,10 @@ func (event DomainEventV1) validateCreated() error {
 		return malformed("type is %q, want %q", event.Type, expectedType)
 	}
 
-	if len(event.Data) != 1 {
-		return malformed("created event data must contain exactly id")
+	for name, value := range event.Data {
+		if !json.Valid(value) {
+			return malformed("data.%s must contain a JSON value", name)
+		}
 	}
 
 	return event.validateLifecycleID()

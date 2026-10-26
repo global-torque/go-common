@@ -59,6 +59,9 @@ func NewMessage(data any, attributes map[string]string) (*Message, error) {
 //}
 
 type Event struct {
+	Version    int            `json:"version,omitempty"`
+	OccurredAt *time.Time     `json:"occurred_at,omitempty"`
+	ObjectRef  string         `json:"object_ref,omitempty"`
 	ID         string         `json:"id"`
 	Attempt    *int           `json:"attempt"`
 	Action     EventType      `json:"action" validate:"required"`

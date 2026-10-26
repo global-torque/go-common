@@ -2,6 +2,7 @@ package domainevents
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -266,13 +267,6 @@ func TestDecodeV1RejectsMalformedCreatedEvents(t *testing.T) {
 			name: "mismatched row id",
 			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
 				"id": 43,
-			}),
-		},
-		{
-			name: "unapproved complete-row field",
-			payload: replaceJSONField(t, validCreatedPayload, "data", map[string]any{
-				"id":   42,
-				"name": "Series A",
 			}),
 		},
 		{
@@ -547,40 +541,6 @@ func TestParseMode(t *testing.T) {
 	require.ErrorIs(t, err, ErrMalformedEvent)
 }
 
-func TestSuppressLegacyFieldEvent(t *testing.T) {
-	tests := []struct {
-		name       string
-		mode       string
-		objectName string
-		action     string
-		data       map[string]any
-		want       bool
-		wantError  bool
-	}{
-		{name: "off keeps monitored field", mode: "off", objectName: "investment", action: "post_update", data: map[string]any{"status": "confirmed"}},
-		{name: "shadow keeps monitored field", mode: "shadow", objectName: "investment", action: "post_update", data: map[string]any{"status": "confirmed"}},
-		{name: "active suppresses monitored field", mode: "active", objectName: "investment", action: "post_update", data: map[string]any{"funding_type": "wallet"}, want: true},
-		{name: "active keeps insert", mode: "active", objectName: "profile", action: "post_add", data: map[string]any{"kyc_status": "approved"}},
-		{name: "active keeps unmonitored field", mode: "active", objectName: "offer", action: "post_update", data: map[string]any{"name": "updated"}},
-		{name: "active keeps synthetic publish command", mode: "active", objectName: "offer", action: "post_update", data: map[string]any{"status": "publish"}},
-		{name: "mixed update is owned by outbox", mode: "active", objectName: "offer", action: "post_update", data: map[string]any{"name": "updated", "status": "legal-accepted"}, want: true},
-		{name: "invalid mode fails safely", mode: "enabled", objectName: "offer", action: "post_update", data: map[string]any{"status": "legal-accepted"}, wantError: true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Setenv("DOMAIN_EVENTS_MODE", test.mode)
-			got, err := SuppressLegacyFieldEvent(test.objectName, test.action, test.data)
-			if test.wantError {
-				require.ErrorIs(t, err, ErrMalformedEvent)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, test.want, got)
-		})
-	}
-}
-
 func TestDomainEventV1PositiveIntObjectID(t *testing.T) {
 	t.Parallel()
 
@@ -712,4 +672,14 @@ func rawString(t *testing.T, value json.RawMessage) string {
 	var decoded string
 	require.NoError(t, json.Unmarshal(value, &decoded))
 	return decoded
+}
+
+func TestCreatedSnapshotPreservesExactValues(t *testing.T) {
+	payload := strings.Replace(validCreatedPayload, `"data": {"id": 42}`, `"data": {"id": 42, "amount": "123456789012345678.000000000000000001", "nested": [null, true, {"exact": 123456789012345678901234567890.123456789}], "optional": null}`, 1)
+	event, err := DecodeV1([]byte(payload))
+	require.NoError(t, err)
+	require.JSONEq(t, `[null,true,{"exact":123456789012345678901234567890.123456789}]`, string(event.Data["nested"]))
+	require.Contains(t, string(event.Data["nested"]), "123456789012345678901234567890.123456789")
+	event.Data["invalid"] = json.RawMessage(`{"broken":`)
+	require.ErrorIs(t, event.Validate(), ErrMalformedEvent)
 }

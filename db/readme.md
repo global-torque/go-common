@@ -26,6 +26,7 @@ notifications.
 - `New(ctx) (*DB, error)`
 - `MustNew(ctx) *DB`
 - `NewDB(pool, log) *DB`
+- `BeginScope(ctx, pgx.TxOptions) (context.Context, pgx.Tx, error)`
 - `NewPool(ctx)`
 - `NewPoolFromConfig(ctx, pgConfig, log)`
 - `NewConn(ctx)`
@@ -69,12 +70,39 @@ var name string
 err = database.QueryRow(ctx, "select name from users where id=$1", id).Scan(&name)
 ```
 
-`DB` embeds `*pgxpool.Pool`, so use pgx pool methods directly.
+`DB` embeds `*pgxpool.Pool`. Call database methods on `DB` to participate in contextual transactions.
+
+## Transaction scopes
+
+`BeginScope` starts one root transaction and returns its context and transaction handle.
+Pass the returned context into every repository call and commit or roll back the handle when work finishes.
+The server module's `middleware.NewAtomic` manages this lifecycle for Echo requests.
+
+`Exec`, `Query`, `QueryRow`, `SendBatch`, and `CopyFrom` automatically use the scoped transaction.
+`Begin` and zero-option `BeginTx` create pgx savepoints. Existing `orm.WithTx` calls therefore work inside a scope;
+releasing their savepoints cannot commit the root transaction. Without a scope, methods retain normal pool behavior.
+
+Scopes belong to the underlying pool, so different `DB` wrappers sharing one pool can participate.
+Using a different pool, creating a duplicate scope, specifying nested transaction options, or calling `Acquire` or
+`AcquireFunc` inside a scope returns an error. Scoped `Ping` uses the held transaction connection.
+A completed scope returns `pgx.ErrTxClosed` and never falls back to the pool.
+
+Execute transaction work sequentially and close rows and batches before completion. Explicit `.Pool` access,
+raw connections, and transaction-control SQL bypass scope management. Scopes cover one PostgreSQL database and
+provide neither distributed transactions nor automatic retries.
 
 ## Testing
 
 Use `github.com/global-torque/go-common/db/v2/dbtests` for fixture setup and SQL
 assertions in integration tests.
+
+Set `ATOMIC_TEST_DATABASE_URL` to an isolated PostgreSQL database to run the scope integration tests:
+
+```sh
+ATOMIC_TEST_DATABASE_URL='postgres://localhost/test_database?sslmode=disable' go test -race -run Scope ./...
+```
+
+These tests use temporary tables and exercise a one-connection pool, savepoints, ORM helpers, and concurrent scopes.
 
 ## Gotchas
 

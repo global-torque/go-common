@@ -1,0 +1,217 @@
+[
+  {
+    "name": "integer-exact-nested",
+    "valid": true,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "uuid-reference",
+    "valid": true,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "operation",
+      "object_ref": "57a280d8-2216-46c9-aecc-810cc29feb28",
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "nanosecond-time",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456789Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "mismatched-reference",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "43",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "nil-uuid",
+    "valid": false,
+    "event": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "wrong-version",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 2,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  },
+  {
+    "name": "null-data",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": null
+    }
+  },
+  {
+    "name": "transport-attempt",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00.123456Z",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      },
+      "attempt": 3
+    }
+  },
+  {
+    "name": "nonutc",
+    "valid": false,
+    "event": {
+      "id": "b62668af-7a23-4d52-a1db-92b91c89a815",
+      "version": 1,
+      "action": "investment.review-recorded.v1",
+      "sender": "investment-api",
+      "object_name": "investment",
+      "object_ref": "42",
+      "object_id": 42,
+      "occurred_at": "2026-09-08T12:00:00+00:00",
+      "data": {
+        "amount": "123456789012345678.000000000000000001",
+        "nested": [
+          null,
+          true,
+          {
+            "integer": 123456789012345678901234567890
+          }
+        ],
+        "optional": null
+      }
+    }
+  }
+]

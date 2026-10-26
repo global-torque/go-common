@@ -27,11 +27,6 @@ func SendPushWebhook(path string, msg pclient.Webhook, attrs map[string]string) 
 	return SendPushTo(os.Getenv("HOST"), os.Getenv("PORT"), path, msg, attrs)
 }
 
-// SendPushEvent is the Event-payload counterpart to SendPushWebhook.
-func SendPushEvent(path string, msg pclient.Event, attrs map[string]string) tests.SomeAction {
-	return SendPushTo(os.Getenv("HOST"), os.Getenv("PORT"), path, msg, attrs)
-}
-
 // SendPushTo is the lower-level helper for delivering an arbitrary payload as
 // a Pub/Sub push envelope. Use it when the host/port aren't sourced from the
 // HOST/PORT env vars or when sending a custom message type.

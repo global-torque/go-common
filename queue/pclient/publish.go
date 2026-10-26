@@ -11,17 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Client) PublishEvent(
-	ctx context.Context, topic string, event Event,
-) (*Message, error) {
-	valid := validator.New()
-	if err := valid.Verify(event, http.StatusPreconditionFailed); err != nil {
-		return nil, err
-	}
-	attr := map[string]string{}
-	return b.PublishToTopic(ctx, topic, event, attr)
-}
-
 func (b *Client) PublishWebhook(
 	ctx context.Context, topic string, webhook Webhook,
 ) (*Message, error) {

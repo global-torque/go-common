@@ -57,16 +57,12 @@ type PubSubListener struct {
 
 type PubSubRoute struct {
 	// ToDo
-	// enum: event, webhook, raw
+	// enum: webhook, raw
 	Topic            string
 	Name             string
 	Subscription     string
 	WebhooksListener func(ctx context.Context, msg pclient.Webhook) error
-	EventsListener   func(ctx context.Context, msg pclient.Event) error
-	// InvalidEventsRecorder audits pull deliveries that cannot be decoded as
-	// pclient.Event. The delivery remains NACKed after the hook returns.
-	InvalidEventsRecorder pclient.InvalidEventRecorder
-	MsgsListener          func(ctx context.Context, msg pclient.Message) error
+	MsgsListener     func(ctx context.Context, msg pclient.Message) error
 }
 
 func New(routes []PubSubRoute) (*PubSubListener, error) {
@@ -136,7 +132,7 @@ func (p *PubSubListener) Start(ctx context.Context) error {
 
 	for _, route := range p.routes {
 		switch route.Name {
-		case "webhooks", "events", "messages":
+		case "webhooks", "messages":
 		default:
 			return fmt.Errorf("%w: %s", ErrNotCorrectTopic, route.Name)
 		}
@@ -156,17 +152,6 @@ func (p *PubSubListener) Start(ctx context.Context) error {
 				defer p.wg.Done()
 				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
 					return p.client.ListenWebhooks(ctx, br.Subscription, br.Topic, cb)
-				})
-			}()
-		case "events":
-			cb := p.dedupEvents(br.Topic, br.EventsListener)
-			p.wg.Add(1)
-			go func() {
-				defer p.wg.Done()
-				p.runListener(ctx, br.Name, br.Subscription, func(ctx context.Context) error {
-					return p.client.ListenEventsWithInvalidRecorder(
-						ctx, br.Subscription, br.Topic, cb, br.InvalidEventsRecorder,
-					)
 				})
 			}()
 		case "messages":
@@ -282,35 +267,7 @@ func attemptOf(a *int) int {
 	return *a
 }
 
-// dedupEvents wraps an events callback with claim→handle→finalize. When no
-// deduper is configured it returns the original callback unchanged.
-func (p *PubSubListener) dedupEvents(
-	topic string,
-	fn func(context.Context, pclient.Event) error,
-) func(context.Context, pclient.Event) error {
-	if p.deduper == nil || fn == nil {
-		return fn
-	}
-	return func(ctx context.Context, msg pclient.Event) error {
-		claimed, err := p.deduper.Claim(ctx, p.service, topic, msg.ID, attemptOf(msg.Attempt))
-		if err != nil {
-			return err // retryable: NACK
-		}
-		if !claimed {
-			// already processed, or another delivery is in-flight — skip & ack
-			return nil
-		}
-		if herr := fn(ctx, msg); herr != nil {
-			if merr := p.deduper.MarkFailed(ctx, p.service, msg.ID, herr.Error()); merr != nil {
-				p.log.Error().Err(merr).Str("msg_id", msg.ID).Msg("cannot mark message failed")
-			}
-			return herr // NACK; redelivery re-claims the failed row
-		}
-		return p.deduper.MarkProcessed(ctx, p.service, msg.ID)
-	}
-}
-
-// dedupWebhooks is the webhook-payload counterpart of dedupEvents.
+// dedupWebhooks wraps webhook callbacks with claim, handling and finalization.
 func (p *PubSubListener) dedupWebhooks(
 	topic string,
 	fn func(context.Context, pclient.Webhook) error,
