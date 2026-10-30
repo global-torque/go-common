@@ -191,10 +191,8 @@ The image is published as:
 cr.webdevelop.pro/global-torque/go-common:latest-dev
 ```
 
-It contains Go 1.25.8, native build packages, shared lint/security tools,
-go-common dependencies, and pre-warmed module/build caches for `evm-api`.
-The cache is stored at `/go/pkg/mod` and `/go/build-cache`, matching both the
-`evm-api` builder and its Compose named-volume mount points.
+It contains Go 1.25.8, native build packages, shared lint/security tools, and
+go-common dependencies.
 
 Build and publish the default amd64/arm64 image:
 
@@ -210,10 +208,6 @@ PLATFORMS=linux/amd64 ./docker/build-deploy.sh
 
 The script publishes both the short commit tag and `latest-dev`. The root CI
 also builds the multi-platform image after vet and tests pass on `master`.
-
-When `evm-api/go.mod` or its direct external imports change, refresh
-`docker/evm-api-cache/evm-api.mod`, `docker/evm-api-cache/evm-api.sum`, and
-`docker/evm-api-cache/dependencies.go` before publishing a new image.
 
 ## Using The Image
 

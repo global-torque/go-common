@@ -14,17 +14,6 @@ ENV GOCACHE=/go/build-cache
 
 RUN apk add --no-cache make gcc musl-dev linux-headers git gettext ca-certificates binutils binutils-gold
 
-# Seed the cache paths used by evm-api's Dockerfile and development Compose
-# stack. An empty named volume is initialized from these directories on first use.
-COPY docker/evm-api-cache/evm-api.mod /tmp/evm-api-cache/go.mod
-COPY docker/evm-api-cache/evm-api.sum /tmp/evm-api-cache/go.sum
-COPY docker/evm-api-cache/dependencies.go /tmp/evm-api-cache/dependencies.go
-RUN cd /tmp/evm-api-cache \
-    && GOWORK=off GOMODCACHE=/go/pkg/mod go mod download
-RUN cd /tmp/evm-api-cache \
-    && GOWORK=off GOMODCACHE=/go/pkg/mod go test -mod=readonly -tags=evmapi_cache -run '^$' . \
-    && rm -rf /tmp/evm-api-cache
-
 WORKDIR /app
 
 COPY go.work go.work.sum ./
