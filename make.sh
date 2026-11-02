@@ -8,6 +8,7 @@
 #   ./make.sh run [ARGS...]      # execute the built ./http binary
 #   ./make.sh run-dev [http|cloudrun]
 #   ./make.sh test               # go test -count=1 ./...
+#   ./make.sh vet                # go vet ./...
 #   ./make.sh lint               # golangci-lint
 #   ./make.sh swagger             # generate swagger.yaml
 #   ./make.sh swagger-run         # generate swagger.yaml and preview on http://localhost:8081
@@ -40,6 +41,10 @@ BUILD_DATE=${BUILD_DATE:-$(git show -s --format=%cd --date=format:%Y%m%d "$GIT_C
 WORKER_NAME=${WORKER_NAME:-${SERVICE_NAME%-api}-worker}
 
 PKG_LIST() { go list -buildvcs=false ./... | grep -v /lib/; }
+
+module_dirs() {
+  find . -name go.mod -not -path './.git/*' -exec dirname {} \; | sort
+}
 
 # ----- Build ------------------------------------------------------------------
 build() {
@@ -152,7 +157,15 @@ run_dev() {
 }
 
 run_tests() {
-  TZ=UTC go test -count=1 ./...
+  module_dirs | while IFS= read -r module_dir; do
+    (cd "$module_dir" && TZ=UTC go test -count=1 -p 1 ./... "$@")
+  done
+}
+
+run_vet() {
+  module_dirs | while IFS= read -r module_dir; do
+    (cd "$module_dir" && go vet ./... "$@")
+  done
 }
 
 run_lint() {
@@ -224,6 +237,7 @@ case ${1:-help} in
   build-*)     build "${1#build-}" ;;
   run-dev)     shift; run_dev "$@" ;;
   test)        shift; run_tests "$@" ;;
+  vet)         shift; run_vet "$@" ;;
   lint)        shift; run_lint "$@" ;;
   swagger)     generate_swagger ;;
   swagger-run) swagger_run ;;
