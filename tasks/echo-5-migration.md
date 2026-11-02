@@ -144,6 +144,21 @@ behavior and metric names have been compared.
 
 ## Step-by-step migration
 
+Treat `go-common` as one migration and release gate. Complete all shared-library,
+example, Docker seed, test, lint, and documentation work before changing a
+consumer repository. Do not publish a partially migrated module set.
+
+The required order is:
+
+1. Complete the entire `go-common` migration in steps 1 through 11.
+2. Add or update focused tests for every changed Echo integration and make all
+   `go-common` tests, vet checks, lint checks, and race tests green.
+3. Release the affected public modules together as v3 from the same verified
+   `go-common` commit, as described in step 12.
+4. Complete every remaining consumer and acceptance step in this plan against
+   the published v3 modules. Do not skip an existing step because `go-common`
+   has already been released.
+
 ### 1. Record the Echo v4 baseline
 
 Before changing dependencies, run the current canonical checks and save any
@@ -159,22 +174,13 @@ From `go-common`, run the affected modules independently:
 (cd docker && go vet ./... && go test -count=1 ./...)
 ```
 
-The current root `make.sh` does not loop through modules and has no `vet`
-command. Do not use it as proof that all affected modules passed.
+The root `make.sh` must run `test` and `vet` from every module directory. Fix
+the script before migration if either command only runs from the repository
+root. Record consumer baselines immediately before each consumer migration in
+steps 13 and 14.
 
-From each service, run its canonical test command:
-
-```sh
-# kyc-api
-./make.sh test
-
-# escrow-api
-./make.sh test
-```
-
-Before implementing v3, verify release ancestry. The current branch does not
-contain `server/v2.0.3`, even though consumers already use that release. Stop
-and incorporate the released changes before building v3:
+Before implementing v3, verify release ancestry. Stop and incorporate any
+released v2 changes that are not ancestors of the migration branch:
 
 ```sh
 git merge-base --is-ancestor server/v2.0.3 HEAD
@@ -605,7 +611,39 @@ ATOMIC_TEST_DATABASE_URL='postgres://postgres:postgres@127.0.0.1:55432/atomic?ss
 docker rm --force go-common-atomic-postgres
 ```
 
-### 11. Verify the `go-common` candidate
+### 11. Complete and verify the full `go-common` migration
+
+Finish every `go-common` change from steps 1 through 10 before starting a
+consumer migration. This includes `server`, `queue`, `logger/example`, the main
+Docker dependency seed, module files, tests, examples, and documentation. Do
+not leave an Echo v4 compatibility path in the migration commit.
+
+Add or update focused behavioral tests for every migrated integration. Existing
+tests may be reused when they prove the v5 behavior. Add tests where current
+coverage does not prove the changed contract. At minimum, cover:
+
+- handler and middleware pointer signatures through real requests;
+- shared 404, 405, application-error, HEAD, and committed-response handling;
+- explicit CORS origins and wildcard rejection;
+- body-limit parsing and oversized request rejection;
+- body dump, request logging, panic recovery, and middleware order;
+- Atomic commit, rollback, response replay, hooks, limits, unsupported response
+  features, and the PostgreSQL-backed transaction path;
+- Pub/Sub push maximum-attempt acknowledgement behavior;
+- logger web example and Docker dependency-seed compilation.
+
+Run the repository-level checks first:
+
+```sh
+./make.sh vet
+./make.sh test
+./make.sh lint
+```
+
+Each command must cover every module. If a root command does not loop through
+module directories, fix it before treating the result as migration evidence.
+All failures, including pre-existing lint failures in migrated code, must be
+resolved before release.
 
 Run these checks from each affected module:
 
@@ -626,20 +664,47 @@ go mod graph | grep 'github.com/labstack/echo'
 
 Expected results contain `/v5` and do not contain `/v4`.
 
-Do not tag yet. First migrate and test both consumers against the local
-candidate modules as described below.
+Do not release based only on successful compilation. The focused migration
+tests, root checks, per-module checks, race tests, Atomic PostgreSQL test, Docker
+seed build, and dependency-graph checks must all pass.
 
-### 12. Migrate `kyc-api` against the local candidate
+### 12. Release the complete `go-common` v3 migration
 
-Update `go.mod` to require `server/v3`, `queue/v3`, and Echo v5. Add temporary,
-uncommitted replacements while the shared modules are unpublished:
+Release only after step 11 is fully green. Follow the module release controls
+in `go-common/AGENTS.md` and verify tag ancestry:
 
-```text
-replace github.com/global-torque/go-common/server/v3 => ../go-common/server
-replace github.com/global-torque/go-common/queue/v3 => ../go-common/queue
+```sh
+(cd server && go vet ./... && golangci-lint run --new-from-rev server/v2.0.3 && go test -count=1 ./... && go test -race -count=1 ./...)
+(cd queue && go vet ./... && golangci-lint run --new-from-rev queue/v2.1.0 && go test -count=1 ./... && go test -race -count=1 ./...)
 ```
 
-Run `go mod tidy`, then update imports and handler signatures.
+After explicit release authorization, create annotated `server/v3.0.0` and
+`queue/v3.0.0` tags on the same fully verified commit and push those exact tag
+refs. The logger example and Docker seed migration must be present on that
+commit even though they do not need separate public v3 module tags. Do not
+split the go-common migration across partial releases.
+
+Verify both published modules independently:
+
+```sh
+GOWORK=off go mod download -json github.com/global-torque/go-common/server/v3@v3.0.0
+GOWORK=off go mod download -json github.com/global-torque/go-common/queue/v3@v3.0.0
+```
+
+Do not start KYC or escrow migration work until both downloads resolve to the
+verified release commit.
+
+### 13. Migrate `kyc-api` against published v3 modules
+
+Record the current KYC baseline before changing dependencies:
+
+```sh
+./make.sh test
+```
+
+Update `go.mod` to require published `server/v3.0.0`, `queue/v3.0.0`, and Echo
+v5. Do not use temporary local replacements. Run `go mod tidy`, then update
+imports and handler signatures.
 
 KYC handler example:
 
@@ -724,11 +789,12 @@ docker compose down
 The `tests` service starts the required dependencies, waits for healthy HTTP
 and Cloud Run services, and sets `RUN_INTEGRATION_TESTS=true` for both suites.
 
-### 13. Migrate `escrow-api` against the local candidate
+### 14. Migrate `escrow-api` against published v3 modules
 
-Update `go.mod` and imports to `server/v3`, `queue/v3`, and Echo v5. Use the same
-temporary local replacements as KYC. Change all HTTP and push handler arguments
-to `*echo.Context`.
+Record the current escrow baseline with `./make.sh test` before changing
+dependencies. Update `go.mod` and imports to published `server/v3.0.0`,
+`queue/v3.0.0`, and Echo v5. Do not use local replacements. Change all HTTP and
+push handler arguments to `*echo.Context`.
 
 Minimal handler migration:
 
@@ -807,32 +873,6 @@ The current script has no distinct `unit`, `http`, or `cloudrun` test targets.
 integration suites. Do not run those suites in parallel because they share
 database state.
 
-### 14. Publish shared modules and pin both consumers
-
-After both migrated services pass against local candidates, follow the module
-release controls in `go-common/AGENTS.md`:
-
-```sh
-(cd server && go vet ./... && golangci-lint run --new-from-rev server/v2.0.3 && go test -count=1 ./... && go test -race -count=1 ./...)
-(cd queue && go vet ./... && golangci-lint run --new-from-rev queue/v2.1.0 && go test -count=1 ./... && go test -race -count=1 ./...)
-```
-
-After explicit release authorization, create annotated `server/v3.0.0` and
-`queue/v3.0.0` tags and push those exact tag refs. Tagging and pushing are not
-implied by implementing the migration.
-
-Verify the published modules:
-
-```sh
-GOWORK=off go mod download -json github.com/global-torque/go-common/server/v3@v3.0.0
-GOWORK=off go mod download -json github.com/global-torque/go-common/queue/v3@v3.0.0
-```
-
-In both services, remove the temporary replacements, pin the published
-`v3.0.0` versions, run `go mod tidy`, and repeat all build, package, and
-integration checks. Do not publish service manifests containing local
-replacements or unpublished module versions.
-
 ### 15. Run cross-repository acceptance checks
 
 The migration is complete only when all of these conditions hold:
@@ -859,15 +899,14 @@ Pub/Sub push endpoint before migrating the next service.
 ## Migration order summary
 
 ```text
-1. Record v4 baseline
-2. Reconcile the latest v2 tag ancestry
-3. Build and verify go-common server/v3 and queue/v3 candidates
-4. Update logger example and the main Docker dependency seed
-5. Migrate and verify kyc-api with temporary local replacements
-6. Migrate and verify escrow-api with temporary local replacements
-7. Publish and independently download the shared module versions
-8. Pin both services to published versions and repeat verification
-9. Run cross-service and deployed smoke checks
+1. Record the go-common v4 baseline and reconcile latest v2 tag ancestry
+2. Complete every go-common server, queue, example, Docker, test, and doc change
+3. Make all go-common tests, vet, lint, race, integration, and graph checks green
+4. Release server/v3.0.0 and queue/v3.0.0 from the same verified commit
+5. Independently download and verify both published modules
+6. Record the KYC baseline, migrate it to published v3 modules, and verify it
+7. Record the escrow baseline, migrate it to published v3 modules, and verify it
+8. Run every cross-repository acceptance and deployed smoke check
 ```
 
 Do not run a mixed-major intermediate release. A process can technically contain
