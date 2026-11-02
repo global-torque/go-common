@@ -17,7 +17,7 @@ require (
 
 require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/global-torque/go-common/httputils/v2 v2.0.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
