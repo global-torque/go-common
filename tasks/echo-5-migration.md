@@ -6,6 +6,19 @@ Migrate `go-common`, `kyc-api`, and `escrow-api` from Echo v4 to Echo v5 without
 changing HTTP contracts, Pub/Sub acknowledgement behavior, middleware order, or
 Fx lifecycle behavior.
 
+Use a direct replacement, not a transitional migration path. A short service
+downtime during deployment is acceptable. After validation, stop the old
+service if needed and start the Echo v5 build in its place.
+
+Keep the migration straightforward:
+
+- preserve existing routes, methods, headers, status codes, request and response
+  bodies, authentication behavior, and Pub/Sub acknowledgement behavior;
+- do not add parallel Echo v4 and v5 runtimes, compatibility adapters, feature
+  flags, canary deployment, blue-green deployment, or staged traffic switching;
+- do not create rollback code, rollback procedures, or a rollback release;
+- fix any deployment issue forward in the Echo v5 implementation.
+
 This plan is based on independent source reviews of all three repositories and
 the Echo v5.4.2 source and migration guide. It was prepared on 2026-10-29.
 
@@ -288,7 +301,8 @@ e.Validator = validator.New()
 Echo v5 rejects `*` when credentials are enabled. This migration intentionally
 does not support wildcard origins. Before upgrading the shared server, replace
 every KYC `CORS_ALLOWED_ORIGINS=*` value with the explicit origins needed by
-that environment. This includes:
+that environment. Update every affected `.env` file, Compose manifest, and
+deployment environment as part of the migration. This includes:
 
 ```text
 kyc-api/.local.env
@@ -299,33 +313,39 @@ kyc-api/docker-compose.yaml
 deployment secrets and environment configuration outside the repository
 ```
 
-Parse the comma-separated values and use Echo v5's ordinary allowlist:
+Environment variables are strings, but the existing `envconfig` dependency
+already decodes comma-separated values into string slices. Change the server
+configuration field to a slice instead of adding another parsing function:
 
 ```go
-func origins(value string) []string {
-    parts := strings.Split(value, ",")
-    allowed := make([]string, 0, len(parts))
-    for _, part := range parts {
-        if origin := strings.TrimSpace(part); origin != "" {
-            allowed = append(allowed, origin)
-        }
-    }
-    return allowed
+type Config struct {
+    CORSAllowedOrigins []string `required:"true" split_words:"true"`
 }
+```
 
+Write explicit origins as a comma-separated value in each affected environment
+file. Do not use JSON or shell array syntax:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=https://admin.example.com,https://app.example.com
+```
+
+Pass the decoded slice directly to Echo v5's ordinary allowlist:
+
+```go
 e.Use(echoMW.CORSWithConfig(echoMW.CORSConfig{
     Skipper:          corsSkipper,
-    AllowOrigins:     origins(cfg.CORSAllowedOrigins),
+    AllowOrigins:     cfg.CORSAllowedOrigins,
     AllowCredentials: true,
     AllowMethods:     allowedMethods,
     AllowHeaders:     allowedHeaders,
 }))
 ```
 
-Keep the current required configuration check. Add an explicit startup check
-that rejects `*` with a clear error before Echo constructs the middleware. Add
-tests for one allowed origin, one rejected origin, rejected `*`, and the
-existing OPTIONS route skip behavior.
+Validate the decoded slice at startup. Reject an empty list, empty entries, and
+`*` with a clear error before Echo constructs the middleware. Add tests for one
+allowed origin, multiple allowed origins, one rejected origin, rejected `*`,
+and the existing OPTIONS route skip behavior.
 
 ### 6. Preserve the body-limit environment contract
 
@@ -852,9 +872,15 @@ The migration is complete only when all of these conditions hold:
 11. Service integration tests use published `server/v3` and `queue/v3` modules,
     not local `replace` directives.
 
-Roll out one service at a time. Verify `/healthcheck`, `/metrics`, one normal
-JSON endpoint, one validation failure, one authenticated route, and each
-Pub/Sub push endpoint before migrating the next service.
+Replace one service at a time with its Echo v5 build. Brief downtime is
+acceptable during each replacement. After startup, verify `/healthcheck`,
+`/metrics`, one normal JSON endpoint, one validation failure, one authenticated
+route, and each Pub/Sub push endpoint before replacing the next service.
+
+Do not build an operational migration or rollback path around the replacement.
+The deployed service must expose the same API and behavior after the direct
+swap. If verification finds a problem, correct the Echo v5 implementation and
+deploy it again.
 
 ## Migration order summary
 
@@ -872,7 +898,7 @@ Pub/Sub push endpoint before migrating the next service.
 
 Do not run a mixed-major intermediate release. A process can technically contain
 both Echo modules, but v4 and v5 route, handler, context, and middleware types do
-not interoperate.
+not interoperate. Replace each service directly after its Echo v5 checks pass.
 
 ## Upstream references
 

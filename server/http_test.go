@@ -3,13 +3,14 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewServerCORSAllowsAPIKeyHeader(t *testing.T) {
+func TestNewServerCORSAllowsRequiredRequestHeaders(t *testing.T) {
 	t.Setenv("ENV_FILE", "")
 	t.Setenv("HOST", "127.0.0.1")
 	t.Setenv("PORT", "8080")
@@ -32,7 +33,18 @@ func TestNewServerCORSAllowsAPIKeyHeader(t *testing.T) {
 
 	require.Equal(t, http.StatusNoContent, response.Code)
 	require.Equal(t, "https://admin.example.com", response.Header().Get(echo.HeaderAccessControlAllowOrigin))
-	require.Contains(t, response.Header().Get(echo.HeaderAccessControlAllowHeaders), "X-API-Key")
+	allowHeaders := strings.Split(response.Header().Get(echo.HeaderAccessControlAllowHeaders), ",")
+	require.Contains(t, normalizeHeaderNames(allowHeaders), strings.ToLower("X-API-Key"))
+	require.Contains(t, normalizeHeaderNames(allowHeaders), strings.ToLower("Idempotency-Key"))
+}
+
+func normalizeHeaderNames(headers []string) []string {
+	normalized := make([]string, 0, len(headers))
+	for _, header := range headers {
+		normalized = append(normalized, strings.ToLower(strings.TrimSpace(header)))
+	}
+
+	return normalized
 }
 
 /*
