@@ -331,7 +331,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 - Configuration: Docker build args include `GIT_COMMIT`, `BUILD_DATE`, `SERVICE_NAME`, `REPOSITORY`, `VERSION`; root CI builds Go 1.25.8 image variants.
 - Wiring pattern: dependent Dockerfiles can use `FROM cr.webdevelop.pro/global-torque/go-common:latest-dev AS builder` and run `./make.sh build`.
 - Testing helpers: root `.github/workflows/ci.yaml` runs module vet/tests with PostgreSQL and Pub/Sub emulator services before image build.
-- Gotchas: this directory is a build seed with blank imports to pre-download heavy dependencies; its module path is not a go-common package path. The image also seeds `/go/pkg/mod` and `/go/build-cache` from `docker/evm-api-cache`; `evm-api` uses those exact paths in both its Dockerfile and Compose stack. The snapshot is named `evm-api.mod`/`evm-api.sum` so root module discovery does not treat it as another workspace module; refresh it when `evm-api/go.mod` or its direct external imports change.
+- Gotchas: this directory is a build seed with blank imports to pre-download heavy dependencies; its module path is not a go-common package path.
 
 ## Cross-Cutting Patterns
 
