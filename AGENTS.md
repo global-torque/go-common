@@ -328,7 +328,7 @@ This repository is a multi-module Go library for shared Global Torque service pl
 - Use for: building the shared `cr.webdevelop.pro/global-torque/go-common` image and copying common `etc` files into service images.
 - Do not use for: application package imports.
 - Key APIs: `docker/Dockerfile`, `docker/etc/make.sh`, `docker/etc/golangci.yml`, `docker/etc/air.toml`, `docker/build-deploy.sh`.
-- Configuration: Docker build args include `GIT_COMMIT`, `BUILD_DATE`, `SERVICE_NAME`, `REPOSITORY`, `VERSION`; root CI builds Go 1.25.8 image variants.
+- Configuration: Docker build args include `GIT_COMMIT`, `BUILD_DATE`, `SERVICE_NAME`, `REPOSITORY`, `VERSION`; root CI builds Go 1.27.3 image variants.
 - Wiring pattern: dependent Dockerfiles can use `FROM cr.webdevelop.pro/global-torque/go-common:latest-dev AS builder` and run `./make.sh build`.
 - Testing helpers: root `.github/workflows/ci.yaml` runs module vet/tests with PostgreSQL and Pub/Sub emulator services before image build.
 - Gotchas: this directory is a build seed with blank imports to pre-download heavy dependencies; its module path is not a go-common package path.

@@ -17,7 +17,7 @@ lstrip() {
 }
 
 WORK_DIR=$(pwd)
-GOLANGCI_LINT_VERSION=v2.11.4
+GOLANGCI_LINT_VERSION=v2.14.0
 # if company name not set - try to get it from the path$
 if [ -z "${COMPANY_NAME}" ]; then
   COMPANY_NAME=$(lstrip $(basename `cd ..; pwd`) "pro")

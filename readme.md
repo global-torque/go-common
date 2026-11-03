@@ -191,8 +191,9 @@ The image is published as:
 cr.webdevelop.pro/global-torque/go-common:latest-dev
 ```
 
-It contains Go 1.25.8, native build packages, shared lint/security tools, and
-go-common dependencies.
+It contains Go 1.27.3, golangci-lint 2.14.0, native build packages, shared
+security tools, and go-common dependencies. Repository lint enforces the
+standard baseline; stricter lint debt is handled separately.
 
 Build and publish the default amd64/arm64 image:
 

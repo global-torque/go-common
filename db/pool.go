@@ -7,13 +7,12 @@ import (
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v4"
+	"github.com/global-torque/go-common/configurator/v2"
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
-
-	"github.com/global-torque/go-common/configurator/v2"
-	"github.com/global-torque/go-common/logger/v2"
 )
 
 // NewPool is constructor for pgxpool.Pool
@@ -128,7 +127,8 @@ func wrapAfterConnect(next func(context.Context, *pgx.Conn) error) func(context.
 
 func setSessionTimeZone(ctx context.Context, conn interface {
 	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
-}) error {
+},
+) error {
 	if _, err := conn.Exec(ctx, "SET TIME ZONE 'UTC'"); err != nil {
 		return fmt.Errorf("set db session time zone: %w", err)
 	}

@@ -36,7 +36,7 @@ func CreateDefaultRequest(ctx context.Context, req Request) (*http.Request, erro
 		ctx,
 		req.Method,
 		fmt.Sprintf("%s://%s%s", req.Scheme, req.Host, req.Path),
-		bytes.NewBuffer((req.Body)),
+		bytes.NewBuffer(req.Body),
 	)
 	if err != nil {
 		return res, errors.Wrapf(err, "cannot create new request")

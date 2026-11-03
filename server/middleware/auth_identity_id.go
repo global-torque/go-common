@@ -5,10 +5,9 @@ import (
 	"net/http"
 
 	"github.com/global-torque/go-common/context/v2/keys"
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
-
-	"github.com/global-torque/go-common/logger/v2"
 )
 
 type AuthIdentityHeaderMiddleware struct {

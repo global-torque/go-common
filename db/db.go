@@ -5,11 +5,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/global-torque/go-common/logger/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/global-torque/go-common/logger/v2"
 )
 
 var (

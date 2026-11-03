@@ -19,8 +19,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25.8'
+          go-version: '1.27.3'
           cache: false
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+      - name: Lint
+        run: |
+          ./make.sh lint
+          test -z "$(git status --porcelain --untracked-files=all)"
       - name: Static checks
         run: ./make.sh vet
 
@@ -35,7 +41,10 @@ jobs:
         env:
           PUBSUB_PROJECT_ID: webdevelop-live
       postgres:
-        image: postgres:18-alpine
+        image: cr.webdevelop.pro/global-torque/postgres@sha256:8ce1de1be42f15c10950b3bb19acfb8639d6b74020fa5b8dff9a0164b38eea96
+        credentials:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
         ports:
           - 5432:5432
         env:
@@ -43,16 +52,78 @@ jobs:
           POSTGRES_DB: invest_platform
           POSTGRES_PASSWORD: postgres
         options: >-
-          --health-cmd "pg_isready -U postgres -d invest_platform"
+          --health-cmd "psql -U postgres -d invest_platform -X -A -t -v ON_ERROR_STOP=1 -c \"SELECT current_database() = 'invest_platform' AND to_regclass('public.migration_services') IS NOT NULL AND to_regclass('public.migration_service_logs') IS NOT NULL\" | grep -qx t"
           --health-interval 1s
-          --health-timeout 1s
+          --health-timeout 3s
           --health-retries 50
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25.8'
+          go-version: '1.27.3'
           cache: false
+      - name: Login to cr.webdevelop.pro
+        uses: docker/login-action@v4
+        with:
+          registry: cr.webdevelop.pro
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # Canonical migration image from migration-service revision
+      # bdd03788479236ac92b4c0cd155e158d77bdad48. Its embedded migration tree
+      # was verified byte-for-byte against that revision.
+      - name: Apply canonical migrations
+        run: |
+          docker run --rm --network host --entrypoint sh \
+            -e DB_TYPE=postgres \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=5432 \
+            -e DB_USER=postgres \
+            -e DB_PASSWORD=postgres \
+            -e DB_DATABASE=invest_platform \
+            -e DB_SSL_MODE=disable \
+            -e DB_MAX_CONNECTIONS=5 \
+            -e DB_APP_NAME=go_common_migration_test \
+            -e DB_LOG_LEVEL=error \
+            -e ENV_NAME=dev \
+            -e HOST=127.0.0.1 \
+            -e PORT=8085 \
+            -e LOG_LEVEL=error \
+            -e LOG_CONSOLE=true \
+            -e LOG_FORMAT=txt \
+            -e MIGRATION_DIR=/app/migrations/ \
+            -e MIGRATION_RUNTIME_ROLE=invest_user \
+            cr.webdevelop.pro/webdevelop-pro/migration-service@sha256:6659f480fed21acfde88b3f6b900474315c2ce645ca1a70d6a6d9c057e593124 \
+            -ec '
+              /app/app --apply-only=true
+              set +e
+              check_output=$(/app/app --check 2>&1)
+              check_status=$?
+              set -e
+              printf "%s\n" "$check_output"
+              if [ "$check_status" -ne 0 ] || printf "%s\n" "$check_output" | grep -Eq "migrations have differences|failed to check migrations|error during checking migrations"; then
+                exit 1
+              fi
+            '
+      - name: Verify migrated PostgreSQL fixture
+        run: |
+          docker exec "${{ job.services.postgres.id }}" \
+            psql -U postgres -d invest_platform -X -A -t -v ON_ERROR_STOP=1 \
+            -c "SELECT version = 20 AND to_regclass('public.business_events') IS NOT NULL FROM public.migration_services WHERE name = 'queue'" \
+            | grep -qx t
+      - name: Verify business event PostgreSQL contract
+        env:
+          DB_TYPE: postgres
+          DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_DATABASE: invest_platform
+          DB_APP_NAME: go_common
+          DB_SSL_MODE: disable
+        run: |
+          output=$(cd queue && go test -count=1 -p 1 -v ./businessevents -run '^TestPostgresAtomicReplayAndConflict$')
+          printf '%s\n' "$output"
+          printf '%s\n' "$output" | grep -F -- '--- PASS: TestPostgresAtomicReplayAndConflict'
       - name: Run tests
         env:
           PUBSUB_EMULATOR_HOST: localhost:8085
@@ -80,9 +151,15 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Short SHA
-        id: short-sha
-        run: echo "sha=$(git rev-parse --short=8 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Build metadata
+        id: build-metadata
+        run: |
+          full_sha=$(git rev-parse HEAD)
+          build_date=$(date -u +%Y%m%d)
+          echo "short_sha=$(printf '%s' "$full_sha" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "full_sha=$full_sha" >> "$GITHUB_OUTPUT"
+          echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+          echo "version=$build_date:$full_sha" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -98,6 +175,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push
+        id: build-push
         uses: docker/build-push-action@v7
         with:
           push: true
@@ -107,4 +185,13 @@ jobs:
           tags: |
             cr.webdevelop.pro/global-torque/go-common:latest
             cr.webdevelop.pro/global-torque/go-common:latest-dev
-            cr.webdevelop.pro/global-torque/go-common:${{ steps.short-sha.outputs.sha }}
+            cr.webdevelop.pro/global-torque/go-common:${{ steps.build-metadata.outputs.short_sha }}
+          build-args: |
+            GIT_COMMIT=${{ steps.build-metadata.outputs.full_sha }}
+            BUILD_DATE=${{ steps.build-metadata.outputs.build_date }}
+            SERVICE_NAME=go-common
+            REPOSITORY=global-torque/go-common
+            VERSION=${{ steps.build-metadata.outputs.version }}
+      - name: Record image digest
+        run: |
+          echo "image_digest=${{ steps.build-push.outputs.digest }}" | tee -a "$GITHUB_STEP_SUMMARY"
