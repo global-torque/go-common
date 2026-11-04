@@ -7,7 +7,6 @@ import (
 	_ "github.com/ethereum/go-ethereum"
 	_ "github.com/ethereum/go-ethereum/crypto"
 	"github.com/global-torque/go-common/configurator/v2"
-	"github.com/global-torque/go-common/context/v2/keys"
 	_ "github.com/global-torque/go-common/db/v2"
 	_ "github.com/global-torque/go-common/httputils/v2"
 	"github.com/global-torque/go-common/logger/v2"
@@ -29,15 +28,6 @@ var (
 )
 
 func main() {
-	ctx := context.TODO()
-	ctx = keys.SetCtxValue(ctx, keys.LogInfo, logger.ServiceContext{
-		Service: service,
-		Version: version,
-		SourceReference: &logger.SourceReference{
-			Repository: repository,
-			RevisionID: revisionID,
-		},
-	})
 	verser.SetServiceVersionRepositoryRevision(service, version, repository, revisionID)
 	fx.New(
 		fx.Provide(

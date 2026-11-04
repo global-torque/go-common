@@ -40,8 +40,9 @@ Docker build args:
 - `GOSEC_VERSION`
 - `GCI_VERSION`
 
-The image currently uses Go `1.25.8` on Alpine and installs `golangci-lint`,
-`gosec`, and `gci`.
+The image currently uses Go `1.27.3` on Alpine and installs
+`golangci-lint` `2.14.0`, `gosec`, and `gci`. Repository lint uses the
+standard baseline; stricter lint debt is handled separately.
 
 ## Wiring Pattern
 

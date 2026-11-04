@@ -3,9 +3,8 @@ package fxzerolog
 import (
 	"strings"
 
-	"go.uber.org/fx/fxevent"
-
 	"github.com/global-torque/go-common/logger/v2"
+	"go.uber.org/fx/fxevent"
 )
 
 type ZeroLogger struct {

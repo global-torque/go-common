@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/global-torque/go-common/httputils/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestContext struct {

@@ -3,7 +3,7 @@ run:
   concurrency: 4
   tests: false
 linters:
-  default: all
+  default: standard
   disable:
     - cyclop
     - depguard

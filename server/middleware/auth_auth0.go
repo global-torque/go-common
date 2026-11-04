@@ -108,7 +108,7 @@ func (m *Auth0Middleware) Validate(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// if status code is not 2xx
-		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		if resp.StatusCode < 200 || resp.StatusCode > 299 {
 			return c.JSON(
 				http.StatusUnauthorized,
 				map[string][]string{"__error__": {"not valid token in Authorization header"}},

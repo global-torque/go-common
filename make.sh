@@ -9,7 +9,7 @@
 #   ./make.sh run-dev [http|cloudrun]
 #   ./make.sh test               # go test -count=1 ./...
 #   ./make.sh vet                # go vet ./...
-#   ./make.sh lint               # golangci-lint
+#   ./make.sh lint [--fix]       # golangci-lint (read-only unless --fix)
 #   ./make.sh swagger             # generate swagger.yaml
 #   ./make.sh swagger-run         # generate swagger.yaml and preview on http://localhost:8081
 #   ./make.sh publish dev|prod   # build once and publish image aliases
@@ -169,7 +169,28 @@ run_vet() {
 }
 
 run_lint() {
-  golangci-lint -c .golangci.yml run --fix "$@"
+  local fix_arg=""
+
+  case "${1:-}" in
+    "") ;;
+    --fix)
+      fix_arg=--fix
+      shift
+      ;;
+    *)
+      echo "usage: ./make.sh lint [--fix]" >&2
+      return 2
+      ;;
+  esac
+  if [ "$#" -ne 0 ]; then
+    echo "usage: ./make.sh lint [--fix]" >&2
+    return 2
+  fi
+
+  module_dirs | while IFS= read -r module_dir; do
+    # shellcheck disable=SC2086
+    (cd "$module_dir" && golangci-lint -c "$WORK_DIR/.golangci.yml" run $fix_arg ./...)
+  done
 }
 
 swagger_file() {

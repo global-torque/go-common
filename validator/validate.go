@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/global-torque/go-common/response/v2"
 	valid "github.com/go-playground/validator/v10"
 	pkgerrors "github.com/pkg/errors"
-
-	"github.com/global-torque/go-common/response/v2"
 )
 
 const (
