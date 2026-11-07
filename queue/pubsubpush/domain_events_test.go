@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	domainevents "github.com/global-torque/go-common/queue/v2/domainevents"
+	domainevents "github.com/global-torque/go-common/queue/v3/domainevents"
 	"github.com/stretchr/testify/require"
 )
 

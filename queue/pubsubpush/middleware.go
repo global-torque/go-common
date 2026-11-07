@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/global-torque/go-common/logger/v2"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const componentName = "pubsubpush"
@@ -25,7 +25,7 @@ const componentName = "pubsubpush"
 // to handle malformed deliveries.
 func MaxAttempts(n int) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			body, err := io.ReadAll(c.Request().Body)
 			if err != nil {
 				return next(c)

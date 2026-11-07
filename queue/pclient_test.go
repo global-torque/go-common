@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/global-torque/go-common/configurator/v2"
-	pclient "github.com/global-torque/go-common/queue/v2/pclient"
+	pclient "github.com/global-torque/go-common/queue/v3/pclient"
 )
 
 const (

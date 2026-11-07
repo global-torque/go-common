@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	domainevents "github.com/global-torque/go-common/queue/v2/domainevents"
+	domainevents "github.com/global-torque/go-common/queue/v3/domainevents"
 )
 
 // DomainEventDelivery keeps immutable business identity separate from the

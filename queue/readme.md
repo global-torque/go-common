@@ -1,6 +1,6 @@
 # queue
 
-Import path: `github.com/global-torque/go-common/queue/v2`
+Import path: `github.com/global-torque/go-common/queue/v3`
 
 Route-based Google Pub/Sub pull listener for workers. It wraps
 `queue/pclient` listeners and can optionally deduplicate webhook
@@ -73,7 +73,7 @@ Raw message callbacks are not dedup-wrapped.
 
 ## Testing
 
-Use `github.com/global-torque/go-common/queue/v2/qtests` with a Pub/Sub emulator.
+Use `github.com/global-torque/go-common/queue/v3/qtests` with a Pub/Sub emulator.
 
 ## Gotchas
 

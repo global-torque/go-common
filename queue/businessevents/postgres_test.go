@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/global-torque/go-common/queue/v2/pclient"
+	"github.com/global-torque/go-common/queue/v3/pclient"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"

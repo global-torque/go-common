@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/global-torque/go-common/queue/v2/pclient"
+	"github.com/global-torque/go-common/queue/v3/pclient"
 	"github.com/jackc/pgx/v5"
 )
 

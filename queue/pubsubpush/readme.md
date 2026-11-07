@@ -1,8 +1,10 @@
 # queue/pubsubpush
 
-Import path: `github.com/global-torque/go-common/queue/v2/pubsubpush`
+Import path: `github.com/global-torque/go-common/queue/v3/pubsubpush`
 
 DTOs and Echo middleware for Google Pub/Sub push subscription HTTP requests.
+
+Version 3 uses Echo v5.4.2. `MaxAttempts` now wraps handlers with `*echo.Context`, not Echo v4's `echo.Context`. Push envelope JSON and domain event decoding contracts are unchanged. Consumers that only use the DTOs or decoders need to update their queue import paths, not their HTTP framework.
 
 ## Use For
 

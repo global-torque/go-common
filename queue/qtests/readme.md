@@ -1,6 +1,6 @@
 # queue/qtests
 
-Import path: `github.com/global-torque/go-common/queue/v2/qtests`
+Import path: `github.com/global-torque/go-common/queue/v3/qtests`
 
 Pub/Sub integration-test fixtures and actions for the shared table-test runner.
 
